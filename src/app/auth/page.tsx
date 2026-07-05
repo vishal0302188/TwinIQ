@@ -31,8 +31,12 @@ function AuthForm() {
   const [forgotSent, setForgotSent] = useState(false);
 
   useEffect(() => {
-    if (searchParams.get("signup") === "true") {
+    const hasSignup = searchParams.get("signup") === "true" || 
+                      (typeof window !== "undefined" && window.location.search.includes("signup=true"));
+    if (hasSignup) {
       setIsSignUp(true);
+    } else {
+      setIsSignUp(false);
     }
   }, [searchParams]);
 
