@@ -168,8 +168,8 @@ export default function LandingPage() {
             <Link href="/auth">
               <Button variant="outline" size="sm">Sign In</Button>
             </Link>
-            <Link href="/auth?signup=true">
-              <Button size="sm">Start Free</Button>
+            <Link href="/auth">
+              <Button size="sm">Login</Button>
             </Link>
           </div>
 
@@ -191,8 +191,8 @@ export default function LandingPage() {
             <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="outline" className="w-full">Sign In</Button>
             </Link>
-            <Link href="/auth?signup=true" onClick={() => setMobileMenuOpen(false)}>
-              <Button className="w-full">Start Free</Button>
+            <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
+              <Button className="w-full">Login</Button>
             </Link>
           </div>
         </div>
@@ -221,9 +221,9 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link href="/auth?signup=true">
+            <Link href="/auth">
               <Button size="lg" glowing>
-                Start Free <ArrowRight size={16} />
+                Login <ArrowRight size={16} />
               </Button>
             </Link>
             <Button variant="outline" size="lg" onClick={() => scrollToSection("interactive-demo")}>
