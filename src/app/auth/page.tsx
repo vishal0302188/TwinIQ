@@ -11,6 +11,8 @@ import {
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
   sendPasswordResetEmail 
 } from "firebase/auth";
@@ -39,6 +41,21 @@ function AuthForm() {
       setIsSignUp(false);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    if (auth) {
+      getRedirectResult(auth)
+        .then((result) => {
+          if (result?.user) {
+            localStorage.setItem("twiniq_user_session", result.user.email || "google-user");
+            router.push("/dashboard");
+          }
+        })
+        .catch((err) => {
+          console.error("Google Redirect Result error:", err);
+        });
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -94,8 +111,21 @@ function AuthForm() {
     try {
       if (auth) {
         const provider = new GoogleAuthProvider();
-        await signInWithPopup(auth, provider);
-        router.push("/dashboard");
+        
+        // Detect mobile browser to prevent popup blocks/closures
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent
+        );
+
+        if (isMobile) {
+          await signInWithRedirect(auth, provider);
+        } else {
+          const result = await signInWithPopup(auth, provider);
+          if (result.user) {
+            localStorage.setItem("twiniq_user_session", result.user.email || "google-user");
+            router.push("/dashboard");
+          }
+        }
       } else {
         // Fallback
         setTimeout(() => {
