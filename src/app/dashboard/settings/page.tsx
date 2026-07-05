@@ -106,13 +106,24 @@ export default function SettingsPage() {
     );
     if (!confirmation) return;
 
+    // Prompt for password verification
+    const passwordInput = window.prompt("For security verification, please enter your password to confirm account deletion:");
+    if (passwordInput === null) return; // User cancelled the prompt
+    if (!passwordInput.trim()) {
+      alert("Password cannot be empty. Account deletion aborted.");
+      return;
+    }
+
     setDeletingAccount(true);
     try {
       // 1. Clear database/credentials (delete from Firebase Authentication)
       const { auth } = await import("@/lib/firebase");
-      const { deleteUser } = await import("firebase/auth");
+      const { deleteUser, EmailAuthProvider, reauthenticateWithCredential } = await import("firebase/auth");
 
-      if (auth && auth.currentUser) {
+      if (auth && auth.currentUser && auth.currentUser.email) {
+        // Reauthenticate the user with their password before deleting
+        const credential = EmailAuthProvider.credential(auth.currentUser.email, passwordInput);
+        await reauthenticateWithCredential(auth.currentUser, credential);
         await deleteUser(auth.currentUser);
       }
 
@@ -126,7 +137,9 @@ export default function SettingsPage() {
     } catch (err: any) {
       console.error("Account deletion failed:", err);
       let errorMsg = err.message || err;
-      if (err.code === "auth/requires-recent-login") {
+      if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+        errorMsg = "Incorrect password verification. Account deletion aborted.";
+      } else if (err.code === "auth/requires-recent-login") {
         errorMsg = "For security, you must have logged in recently to delete your account. Please log out, sign back in, and try deleting your account again.";
       }
       alert("Account Deletion Failed:\n" + errorMsg);
