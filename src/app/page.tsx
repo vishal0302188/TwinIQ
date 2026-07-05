@@ -162,7 +162,6 @@ export default function LandingPage() {
             <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors cursor-pointer">Features</button>
             <button onClick={() => scrollToSection("interactive-demo")} className="hover:text-white transition-colors cursor-pointer">Live Demo</button>
             <button onClick={() => scrollToSection("testimonials")} className="hover:text-white transition-colors cursor-pointer">Reviews</button>
-            <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors cursor-pointer">Pricing</button>
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
@@ -188,7 +187,6 @@ export default function LandingPage() {
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("features"); }} className="text-left text-lg text-slate-300">Features</button>
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("interactive-demo"); }} className="text-left text-lg text-slate-300">Interactive Demo</button>
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("testimonials"); }} className="text-left text-lg text-slate-300">Testimonials</button>
-          <button onClick={() => { setMobileMenuOpen(false); scrollToSection("pricing"); }} className="text-left text-lg text-slate-300">Pricing</button>
           <div className="flex flex-col gap-4 mt-6">
             <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="outline" className="w-full">Sign In</Button>
@@ -418,71 +416,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="py-24 max-w-7xl mx-auto px-6 border-t border-white/5 relative z-10">
-        <div className="text-center mb-16">
-          <h2 className="text-xs uppercase tracking-widest text-blue-500 font-bold mb-3">Plans</h2>
-          <p className="text-3xl md:text-5xl font-bold text-white tracking-tight">Flexible Scales for Every Digital Twin</p>
-        </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {/* Starter */}
-          <div className="glass-panel p-8 rounded-3xl border border-white/5 flex flex-col justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">Growth Starter</h3>
-              <p className="text-xs text-slate-400 mb-6">Perfect for startups and small shops looking to map operations.</p>
-              <div className="text-3xl font-extrabold text-white mb-6">₹12,500 <span className="text-sm font-medium text-slate-400">/mo</span></div>
-              <ul className="space-y-3 mb-8 text-sm text-slate-300">
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> 1 Live Digital Twin</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> 3 Team seats</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> Standard Simulation Sandbox</li>
-                <li className="flex items-center gap-2 text-slate-500"><X size={16} /> AI Copilot chat</li>
-              </ul>
-            </div>
-            <Link href="/auth?signup=true" className="w-full">
-              <Button variant="outline" className="w-full">Subscribe Starter</Button>
-            </Link>
-          </div>
-
-          {/* Pro */}
-          <div className="glass-panel p-8 rounded-3xl border border-blue-500/40 relative flex flex-col justify-between shadow-[0_0_35px_rgba(59,130,246,0.15)] bg-slate-950/60">
-            <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-xs font-bold text-white px-3 py-1 rounded-full tracking-wider uppercase">Most Popular</div>
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">TwinIQ Pro</h3>
-              <p className="text-xs text-slate-400 mb-6">Complete predictive system for high-growth tech companies and e-com brands.</p>
-              <div className="text-3xl font-extrabold text-white mb-6">₹32,000 <span className="text-sm font-medium text-slate-400">/mo</span></div>
-              <ul className="space-y-3 mb-8 text-sm text-slate-300">
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> 3 Live Twins (Staging & Production)</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> 10 Team seats</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> Unlimited Simulations & Charts</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> AI Copilot Intelligence feeds</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> 24hr data synchronization sync</li>
-              </ul>
-            </div>
-            <Link href="/auth?signup=true" className="w-full">
-              <Button variant="primary" className="w-full">Upgrade to Pro</Button>
-            </Link>
-          </div>
-
-          {/* Enterprise */}
-          <div className="glass-panel p-8 rounded-3xl border border-white/5 flex flex-col justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-white mb-2">Enterprise Grid</h3>
-              <p className="text-xs text-slate-400 mb-6">Custom models, on-prem databases, multi-department networks.</p>
-              <div className="text-3xl font-extrabold text-white mb-6">Custom <span className="text-sm font-medium text-slate-400">Quote</span></div>
-              <ul className="space-y-3 mb-8 text-sm text-slate-300">
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> Unlimited Twins & Seats</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> Custom training models</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> Dedicated database pipelines</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-emerald-400" /> SLA & dedicated support engineers</li>
-              </ul>
-            </div>
-            <Link href="/auth?signup=true" className="w-full">
-              <Button variant="outline" className="w-full">Contact Sales</Button>
-            </Link>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 relative z-10 bg-navy-950">
