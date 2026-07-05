@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div>
           {/* Logo Brand area */}
           <div className="h-16 flex items-center justify-between px-4 border-b border-white/5">
-            <Link href="/" className="flex items-center gap-2 overflow-hidden">
+            <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
               <span className="w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-extrabold text-white text-lg shadow-[0_0_15px_rgba(99,102,241,0.5)]">
                 Ω
               </span>
