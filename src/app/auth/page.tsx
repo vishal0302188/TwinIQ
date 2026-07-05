@@ -77,7 +77,7 @@ function AuthForm() {
       } else if (err.code === "auth/email-already-in-use") {
         displayMsg = "Email Already In Use: This email is already registered. Please use the Login tab.";
       } else if (err.code === "auth/invalid-credential") {
-        displayMsg = "Invalid Credentials: The password is incorrect, or the account does not exist yet.";
+        displayMsg = "Invalid Credentials: The password is incorrect, or this account does not exist.\n\nNote: If you previously signed up via Google, please click 'Continue with Google' to sign in, or click 'Forgot password?' to assign a custom password for manual logins.";
       } else if (err.code === "auth/invalid-email") {
         displayMsg = "Invalid Email: The email format is incorrect.";
       } else if (err.code === "auth/operation-not-allowed") {
