@@ -165,7 +165,7 @@ export default function LandingPage() {
           </nav>
 
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/auth">
+            <Link href="/auth?signup=true">
               <Button variant="outline" size="sm">Sign In</Button>
             </Link>
             <Link href="/auth">
@@ -188,7 +188,7 @@ export default function LandingPage() {
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("interactive-demo"); }} className="text-left text-lg text-slate-300">Interactive Demo</button>
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("testimonials"); }} className="text-left text-lg text-slate-300">Testimonials</button>
           <div className="flex flex-col gap-4 mt-6">
-            <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
+            <Link href="/auth?signup=true" onClick={() => setMobileMenuOpen(false)}>
               <Button variant="outline" className="w-full">Sign In</Button>
             </Link>
             <Link href="/auth" onClick={() => setMobileMenuOpen(false)}>
