@@ -23,6 +23,7 @@ export default function SettingsPage() {
   const [customInventoryLbl, setCustomInventoryLbl] = useState("Asset / Item");
   const [customStaffLbl, setCustomStaffLbl] = useState("Staff / Personnel");
   const [isSaved, setIsSaved] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   // CSV Import states
   const [dragging, setDragging] = useState(false);
@@ -97,6 +98,40 @@ export default function SettingsPage() {
       setIsSaved(false);
       window.location.reload();
     }, 1200);
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmation = window.confirm(
+      "WARNING: Are you absolutely sure you want to delete your account?\n\nThis will permanently delete your authentication record and clear all of your local configuration settings. This action is irreversible."
+    );
+    if (!confirmation) return;
+
+    setDeletingAccount(true);
+    try {
+      // 1. Clear database/credentials (delete from Firebase Authentication)
+      const { auth } = await import("@/lib/firebase");
+      const { deleteUser } = await import("firebase/auth");
+
+      if (auth && auth.currentUser) {
+        await deleteUser(auth.currentUser);
+      }
+
+      // 2. Remove all localStorage settings/credentials
+      if (typeof window !== "undefined") {
+        localStorage.clear();
+      }
+
+      alert("Account deleted successfully. Returning to the authentication portal.");
+      window.location.href = "/auth";
+    } catch (err: any) {
+      console.error("Account deletion failed:", err);
+      let errorMsg = err.message || err;
+      if (err.code === "auth/requires-recent-login") {
+        errorMsg = "For security, you must have logged in recently to delete your account. Please log out, sign back in, and try deleting your account again.";
+      }
+      alert("Account Deletion Failed:\n" + errorMsg);
+      setDeletingAccount(false);
+    }
   };
 
   const handleConnectFirebase = () => {
@@ -284,7 +319,8 @@ export default function SettingsPage() {
         <div className="md:col-span-2">
           {/* TAB 1: PROFILE PARAMETERS */}
           {activeTab === "profile" && (
-            <Card className="border-white/5 bg-slate-950/60 p-6 space-y-6 animate-fadeIn">
+            <div className="space-y-6 animate-fadeIn">
+              <Card className="border-white/5 bg-slate-950/60 p-6 space-y-6">
               <div>
                 <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-white/5 pb-2">
                   Profile Parameters
@@ -376,18 +412,29 @@ export default function SettingsPage() {
                           required
                           value={customClientPlur}
                           onChange={(e) => setCustomClientPlur(e.target.value)}
-                          placeholder="e.g. Clients, Patients, Guests"
+                          placeholder="e.g. Members, Patients"
                           className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white"
                         />
                       </div>
-                      <div className="space-y-1.5 sm:col-span-2">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-slate-400">Staff / Employee Term</label>
+                        <input
+                          type="text"
+                          required
+                          value={customStaffLbl}
+                          onChange={(e) => setCustomStaffLbl(e.target.value)}
+                          placeholder="e.g. Trainer, Doctor"
+                          className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
                         <label className="text-[10px] font-semibold text-slate-400">Inventory Item / Resource Term</label>
                         <input
                           type="text"
                           required
                           value={customInventoryLbl}
                           onChange={(e) => setCustomInventoryLbl(e.target.value)}
-                          placeholder="e.g. Asset, Equipment, Room, Course"
+                          placeholder="e.g. Asset, Equipment, Room"
                           className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-white"
                         />
                       </div>
@@ -395,37 +442,69 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                <div className="space-y-3.5 pt-4 border-t border-white/5">
-                  <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                    Operational Warning Thresholds
-                  </h3>
-                  
-                  <div>
-                    <div className="flex justify-between text-xs mb-1.5 font-medium">
-                      <span className="text-slate-400">Flag alerts when health falls below:</span>
-                      <strong className="text-white">{alertThreshold}%</strong>
+                  <div className="space-y-3.5 pt-4 border-t border-white/5">
+                    <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                      Operational Warning Thresholds
+                    </h3>
+                    
+                    <div>
+                      <div className="flex justify-between text-xs mb-1.5 font-medium">
+                        <span className="text-slate-400">Flag alerts when health falls below:</span>
+                        <strong className="text-white">{alertThreshold}%</strong>
+                      </div>
+                      <input
+                        type="range" min="50" max="95" value={alertThreshold}
+                        onChange={(e) => setAlertThreshold(Number(e.target.value))}
+                        className="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg cursor-pointer"
+                      />
                     </div>
-                    <input
-                      type="range" min="50" max="95" value={alertThreshold}
-                      onChange={(e) => setAlertThreshold(Number(e.target.value))}
-                      className="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg cursor-pointer"
-                    />
                   </div>
+
+                  <div className="flex justify-between items-center pt-4 border-t border-white/5">
+                    {isSaved ? (
+                      <span className="text-xs text-emerald-400 flex items-center gap-1 font-semibold">
+                        <CheckCircle2 size={14} /> Profile settings saved! Loading template...
+                      </span>
+                    ) : <span />}
+                    
+                    <Button type="submit" size="sm" className="flex items-center gap-1.5">
+                      <Save size={14} /> Save Configuration
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+
+              {/* DANGER ZONE - ACCOUNT DELETION */}
+              <Card className="border-red-500/20 bg-red-950/5 p-6 space-y-4">
+                <div>
+                  <h3 className="text-sm font-bold text-red-400 uppercase tracking-wider flex items-center gap-2">
+                    <AlertTriangle size={16} className="text-red-400" /> Danger Zone
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-2 leading-relaxed">
+                    Permanently delete your user credentials from the database and wipe all localized telemetry metrics, configurations, and session parameters.
+                  </p>
                 </div>
 
-                <div className="flex justify-between items-center pt-4 border-t border-white/5">
-                  {isSaved ? (
-                    <span className="text-xs text-emerald-400 flex items-center gap-1 font-semibold">
-                      <CheckCircle2 size={14} /> Profile settings saved! Loading template...
-                    </span>
-                  ) : <span />}
-                  
-                  <Button type="submit" size="sm" className="flex items-center gap-1.5">
-                    <Save size={14} /> Save Configuration
+                <div className="pt-2">
+                  <Button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount}
+                    className="bg-red-600 hover:bg-red-700 text-white font-bold text-xs px-4 py-2 rounded-xl flex items-center gap-2"
+                  >
+                    {deletingAccount ? (
+                      <>
+                        <RefreshCw size={14} className="animate-spin" /> Deleting Account...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 size={14} /> Delete Account & Wipe Credentials
+                      </>
+                    )}
                   </Button>
                 </div>
-              </form>
-            </Card>
+              </Card>
+            </div>
           )}
 
           {/* TAB 2: INTEGRATIONS HUB */}
