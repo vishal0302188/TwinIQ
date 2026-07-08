@@ -83,42 +83,106 @@ function PaymentForm() {
     if (!invoice) return;
     setPaying(true);
 
-    const confirmSim = window.confirm(
-      `[TwinIQ Sandbox Test Mode]\n\nDo you want to simulate a successful payment of ${formatCurrency(invoice.amount)} for Invoice ${invoice.id}?`
-    );
-    if (confirmSim) {
-      try {
-        const updatedInvoice: Invoice = { ...invoice, status: "Paid" };
-        
-        if (db) {
-          await setDoc(doc(db, "invoices", invoice.id), updatedInvoice);
-          // Update revenue metrics inside database
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              revenue: Number(latestData.revenue || 0) + invoice.amount,
-              profit: Number(latestData.profit || 0) + Math.round(invoice.amount * 0.31)
-            });
-          }
-        } else if (typeof window !== "undefined") {
-          localStorage.setItem(`twiniq_mock_inv_${invoice.id}`, JSON.stringify(updatedInvoice));
-        }
+    const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+    
+    // Set this flag to false when you want to enable the live Razorpay Gateway
+    const FORCE_SANDBOX = true;
 
-        setInvoice(updatedInvoice);
-        const generatedId = `pay_sim_${Math.random().toString(36).substring(2, 9)}`;
-        setPayId(generatedId);
-        setPaymentSuccess(true);
-      } catch (err) {
-        console.error("Payment update failed:", err);
-      } finally {
+    // Simulated sandbox payment mode fallback
+    if (FORCE_SANDBOX || !key || key === "rzp_test_5g2g8s5g88s2g8" || key.includes("test")) {
+      const confirmSim = window.confirm(
+        `[TwinIQ Sandbox Test Mode]\n\nDo you want to simulate a successful payment of ${formatCurrency(invoice.amount)} for Invoice ${invoice.id}?`
+      );
+      if (confirmSim) {
+        try {
+          const updatedInvoice: Invoice = { ...invoice, status: "Paid" };
+          
+          if (db) {
+            await setDoc(doc(db, "invoices", invoice.id), updatedInvoice);
+            // Optionally update revenue metrics inside database
+            const finSnap = await getDocs(collection(db, "finance"));
+            if (!finSnap.empty) {
+              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+              const latestData = latestDoc.data();
+              await setDoc(doc(db, "finance", latestDoc.id), {
+                ...latestData,
+                revenue: Number(latestData.revenue || 0) + invoice.amount,
+                profit: Number(latestData.profit || 0) + Math.round(invoice.amount * 0.31)
+              });
+            }
+          } else if (typeof window !== "undefined") {
+            localStorage.setItem(`twiniq_mock_inv_${invoice.id}`, JSON.stringify(updatedInvoice));
+          }
+
+          setInvoice(updatedInvoice);
+          const generatedId = `pay_sim_${Math.random().toString(36).substring(2, 9)}`;
+          setPayId(generatedId);
+          setPaymentSuccess(true);
+        } catch (err) {
+          console.error("Payment update failed:", err);
+        } finally {
+          setPaying(false);
+        }
+      } else {
         setPaying(false);
       }
-    } else {
-      setPaying(false);
+      return;
     }
+
+    const scriptLoaded = await loadRazorpayScript();
+    if (!scriptLoaded) {
+      alert("Failed to load Razorpay SDK. Check your internet connection.");
+      setPaying(false);
+      return;
+    }
+
+    const options = {
+      key: key,
+      amount: invoice.amount * 100, // in paise
+      currency: "INR",
+      name: "TwinIQ Platform",
+      description: `Invoice checkout ${invoice.id}`,
+      handler: async function (response: any) {
+        try {
+          const updatedInvoice: Invoice = { ...invoice, status: "Paid" };
+          
+          if (db) {
+            await setDoc(doc(db, "invoices", invoice.id), updatedInvoice);
+            const finSnap = await getDocs(collection(db, "finance"));
+            if (!finSnap.empty) {
+              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+              const latestData = latestDoc.data();
+              await setDoc(doc(db, "finance", latestDoc.id), {
+                ...latestData,
+                revenue: Number(latestData.revenue || 0) + invoice.amount,
+                profit: Number(latestData.profit || 0) + Math.round(invoice.amount * 0.31)
+              });
+            }
+          }
+
+          setInvoice(updatedInvoice);
+          setPayId(response.razorpay_payment_id);
+          setPaymentSuccess(true);
+        } catch (err) {
+          console.error("Database update error post-payment:", err);
+        } finally {
+          setPaying(false);
+        }
+      },
+      prefill: {
+        name: invoice.client,
+        email: "accounts@" + invoice.client.toLowerCase().replace(/ /g, "") + ".com"
+      },
+      theme: {
+        color: "#3b82f6"
+      }
+    };
+
+    const paymentObject = new (window as any).Razorpay(options);
+    paymentObject.open();
+    paymentObject.on("payment.failed", () => {
+      setPaying(false);
+    });
   };
 
   if (loading) {
