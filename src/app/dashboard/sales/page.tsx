@@ -46,15 +46,29 @@ export default function SalesPage() {
       try {
         if (db) {
           const querySnapshot = await getDocs(collection(db, "sales"));
+          const data: Sale[] = [];
           if (!querySnapshot.empty) {
-            const data: Sale[] = [];
             querySnapshot.forEach((docSnap) => {
               data.push(docSnap.data() as Sale);
             });
-            setSales(data);
-            setLoading(false);
-            return;
           }
+          
+          // Merge local storage imports
+          if (typeof window !== "undefined") {
+            const cached = localStorage.getItem("twiniq_mock_sales");
+            if (cached) {
+              const cachedList = JSON.parse(cached) as Sale[];
+              cachedList.forEach(c => {
+                if (!data.some(d => d.id === c.id)) {
+                  data.push(c);
+                }
+              });
+            }
+          }
+          
+          setSales(data);
+          setLoading(false);
+          return;
         }
       } catch (err) {
         console.error("Firestore sales load error, checking local storage:", err);

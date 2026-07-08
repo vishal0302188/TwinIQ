@@ -91,6 +91,17 @@ export default function MainDashboard() {
           console.error("Firestore employees load error on dashboard:", e);
         }
       }
+      
+      // Add local storage extra revenue if present
+      const extraRev = typeof window !== "undefined" ? Number(localStorage.getItem("twiniq_extra_revenue") || 0) : 0;
+      if (extraRev > 0 && dbFinance.length > 0) {
+        const lastIdx = dbFinance.length - 1;
+        dbFinance[lastIdx] = {
+          ...dbFinance[lastIdx],
+          revenue: dbFinance[lastIdx].revenue + extraRev,
+          profit: dbFinance[lastIdx].profit + Math.round(extraRev * 0.31)
+        };
+      }
 
       setFinanceRecords(dbFinance);
 

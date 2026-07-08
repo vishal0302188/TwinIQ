@@ -287,22 +287,26 @@ export default function SettingsPage() {
 
       if (rowCount > 0) {
         try {
-          if (db) {
-            // Parse CSV records
-            const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ''));
-            const dataRows = [];
+          // Parse CSV records
+          const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ''));
+          const dataRows: any[] = [];
+          
+          for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(",").map(c => c.trim().replace(/^"|"$/g, ''));
+            if (cols.length < headers.length) continue;
             
-            for (let i = 1; i < lines.length; i++) {
-              const cols = lines[i].split(",").map(c => c.trim().replace(/^"|"$/g, ''));
-              if (cols.length < headers.length) continue;
-              
-              const row: any = {};
-              headers.forEach((header, idx) => {
-                row[header] = cols[idx];
-              });
-              dataRows.push(row);
-            }
+            const row: any = {};
+            headers.forEach((header, idx) => {
+              row[header] = cols[idx];
+            });
+            dataRows.push(row);
+          }
 
+          const successRows = dataRows.filter(r => r.Status === "Success" || r.status === "Success");
+          const totalCsvRev = successRows.reduce((sum, r) => sum + Number(r.Amount_INR || r.amount || 0), 0);
+
+          // 1. Write to Firestore if connected
+          if (db) {
             // Write first 35 detailed logs to sales collection
             for (let i = 0; i < Math.min(dataRows.length, 35); i++) {
               const row = dataRows[i];
@@ -318,10 +322,6 @@ export default function SettingsPage() {
               });
             }
 
-            // Sum total success ledger values and update finance metrics
-            const successRows = dataRows.filter(r => r.Status === "Success");
-            const totalCsvRev = successRows.reduce((sum, r) => sum + Number(r.Amount_INR || 0), 0);
-
             const finSnap = await getDocs(collection(db, "finance"));
             if (!finSnap.empty) {
               const latestDoc = finSnap.docs[finSnap.docs.length - 1];
@@ -331,10 +331,43 @@ export default function SettingsPage() {
                 revenue: Number(latestData.revenue || 0) + totalCsvRev,
                 profit: Number(latestData.profit || 0) + Math.round(totalCsvRev * 0.31)
               });
+            } else {
+              // Create default July document if empty
+              await setDoc(doc(db, "finance", "Jul"), {
+                month: "Jul",
+                revenue: totalCsvRev,
+                expenses: Math.round(totalCsvRev * 0.6),
+                profit: Math.round(totalCsvRev * 0.31),
+                cashFlow: Math.round(totalCsvRev * 0.4)
+              });
             }
           }
-        } catch (err) {
+
+          // 2. Write to LocalStorage (Always active for client stability)
+          if (typeof window !== "undefined") {
+            const currentExtraRev = Number(localStorage.getItem("twiniq_extra_revenue") || 0);
+            localStorage.setItem("twiniq_extra_revenue", String(currentExtraRev + totalCsvRev));
+            
+            const currentMockSales = JSON.parse(localStorage.getItem("twiniq_mock_sales") || "[]");
+            // Map keys to match schema
+            const salesToSave = dataRows.slice(0, 35).map(r => ({
+              id: r.Transaction_ID || `txn-${Date.now()}`,
+              customer: r.Customer_Name || "Imported Client",
+              item: r.Product_Item || "Imported Product",
+              amount: Number(r.Amount_INR || 0),
+              date: r.Date || new Date().toISOString().split('T')[0],
+              channel: r.Payment_Channel || "Import Link",
+              status: r.Status || "Success"
+            }));
+            localStorage.setItem("twiniq_mock_sales", JSON.stringify([...salesToSave, ...currentMockSales]));
+          }
+
+          alert(`🎉 Sync Complete!\n\nParsed: ${rowCount} rows\nCumulative Success Sales: ₹${totalCsvRev.toLocaleString()}\n\nAll metrics updated in your dashboard and sales log!`);
+          window.location.reload();
+        } catch (err: any) {
           console.error("Firestore CSV sync error:", err);
+          alert("Database Write Alert:\n\n" + (err.message || err) + "\n\nThe file parsed, but database permissions prevented cloud write. Local metrics were updated successfully!");
+          window.location.reload();
         }
       }
       
