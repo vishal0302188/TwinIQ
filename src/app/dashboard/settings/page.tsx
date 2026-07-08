@@ -279,14 +279,30 @@ export default function SettingsPage() {
     }, 1000);
   };
 
+  const processCSVFile = (file: File | null) => {
+    if (!file) return;
+    setUploading(true);
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== "");
+      // Count rows excluding header
+      const rowCount = Math.max(0, lines.length - 1);
+      
+      setTimeout(() => {
+        setUploading(false);
+        setUploadedRecords(rowCount);
+      }, 1200);
+    };
+    reader.readAsText(file);
+  };
+
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setDragging(false);
-    setUploading(true);
-    setTimeout(() => {
-      setUploading(false);
-      setUploadedRecords(1420);
-    }, 1800);
+    const file = e.dataTransfer.files?.[0] || null;
+    processCSVFile(file);
   };
 
   return (
@@ -636,12 +652,9 @@ export default function SettingsPage() {
                       type="file" 
                       accept=".csv" 
                       className="hidden" 
-                      onChange={() => {
-                        setUploading(true);
-                        setTimeout(() => {
-                          setUploading(false);
-                          setUploadedRecords(1240);
-                        }, 1500);
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null;
+                        processCSVFile(file);
                       }}
                     />
                   </label>
