@@ -86,7 +86,7 @@ function PaymentForm() {
     const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
     
     // Set this flag to false when you want to enable the live Razorpay Gateway
-    const FORCE_SANDBOX = true;
+    const FORCE_SANDBOX = false;
 
     // Simulated sandbox payment mode fallback
     if (FORCE_SANDBOX || !key || key === "rzp_test_5g2g8s5g88s2g8" || key.includes("test")) {
