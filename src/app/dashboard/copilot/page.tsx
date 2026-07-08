@@ -131,10 +131,17 @@ export default function AICopilot() {
         ];
       } else if (normText.includes("supplier")) {
         aiResponseText = "We are currently tracking **Matrix Semi HK** as **High Risk (45%)** due to shipping bottlenecks, and **SpeedData Suppliers** as **Medium Risk** due to component expiry margins. All other suppliers are operating within standard SLA limits.";
-      } else if (normText.includes("price")) {
+      } else if (normText.includes("decrease") && (normText.includes("price") || normText.includes("pricing"))) {
+        aiResponseText = "Simulations show that decreasing prices by **10%** increases customer satisfaction to **97%**, but reduces gross monthly profit by **₹1.8 L** due to lower transaction values.";
+      } else if (normText.includes("increase") && (normText.includes("price") || normText.includes("pricing"))) {
         aiResponseText = "Simulations show that increasing prices by **10%** boosts margins by **₹2.4 L** next month, but drags customer retention by **-1.5%**. A pricing increase above **20%** escalates Stellar Brands churn risk to **92%**.";
+      } else if (normText.includes("price") || normText.includes("pricing")) {
+        aiResponseText = "Pricing adjustments directly alter your twin margins. Increasing prices by **10%** raises revenue by **₹2.4 L** but increases customer churn risk. Decreasing prices by **10%** drops revenue by **₹1.8 L** but optimizes customer satisfaction.";
       } else {
-        aiResponseText = "I have analyzed your query against the active business digital twin network. All operational feeds (Finance, Inventory, Sales, Employees) are synced. If you would like to run a specific decision simulation, please use the Simulation Lab.";
+        aiResponseText = `I have received your request: "${text}".
+Currently, the digital twin operates at a stability index of 82%. There are active alerts for Matrix chipset shipments. 
+
+If you would like to run specific business parameters or override calculations, please check the Sales Log or navigate to the Simulation Lab to execute pricing simulations.`;
       }
 
       setMessages((prev) => [
