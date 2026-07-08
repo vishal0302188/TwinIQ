@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/firebase";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "csv" | "firebase">("profile");
@@ -80,6 +81,18 @@ export default function SettingsPage() {
       setCustomClientPlur(localStorage.getItem("twiniq_custom_client_plur") || "Clients");
       setCustomInventoryLbl(localStorage.getItem("twiniq_custom_inventory_lbl") || "Asset / Item");
       setCustomStaffLbl(localStorage.getItem("twiniq_custom_staff_lbl") || "Staff / Personnel");
+      
+      // Load email address dynamically from Firebase or localStorage session
+      const activeSessionEmail = auth?.currentUser?.email || localStorage.getItem("twiniq_user_session") || "operator@twiniq.ai";
+      setProfileEmail(activeSessionEmail);
+
+      const activeSessionName = auth?.currentUser?.displayName || localStorage.getItem("twiniq_user_name");
+      if (activeSessionName) {
+        setProfileName(activeSessionName);
+      } else {
+        const usernamePrefix = activeSessionEmail.split("@")[0];
+        setProfileName(usernamePrefix.charAt(0).toUpperCase() + usernamePrefix.slice(1));
+      }
     }
   }, []);
 
@@ -91,6 +104,11 @@ export default function SettingsPage() {
     localStorage.setItem("twiniq_custom_client_plur", customClientPlur);
     localStorage.setItem("twiniq_custom_inventory_lbl", customInventoryLbl);
     localStorage.setItem("twiniq_custom_staff_lbl", customStaffLbl);
+    
+    // Save custom email and operator name attributes
+    localStorage.setItem("twiniq_user_name", profileName);
+    localStorage.setItem("twiniq_user_session", profileEmail);
+
     // Remove cleared state flag since the user is resetting parameters/industry templates
     localStorage.removeItem("twiniq_clear_fallback");
     setIsSaved(true);

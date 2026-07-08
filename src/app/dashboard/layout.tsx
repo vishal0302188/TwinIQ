@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { initialEvents, BusinessEvent } from "@/lib/mockData";
+import { getBusinessTerms } from "@/lib/utils";
 import { auth } from "@/lib/firebase";
 import { signOut, onAuthStateChanged, User } from "firebase/auth";
 
@@ -22,6 +23,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [searchQuery, setSearchQuery] = useState("");
   const [timeStr, setTimeStr] = useState("11:47 AM");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarTerms, setSidebarTerms] = useState({
+    clientPlur: "Customers",
+    inventoryLbl: "Inventory",
+    staffLbl: "Employees"
+  });
   
   // Firebase Auth states
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -44,6 +50,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const timer = setInterval(updateTime, 60000);
     return () => clearInterval(timer);
   }, []);
+
+  // Sync sidebar terminology with the selected template schema
+  useEffect(() => {
+    const t = getBusinessTerms();
+    const rawInv = t.inventoryLbl || "Inventory";
+    const cleanInv = rawInv.split(" / ")[0].split(" ")[0]; // e.g. "SKU", "Kitchen"
+    
+    const rawStaff = t.staffLbl || "Employees";
+    const cleanStaff = rawStaff.split(" / ")[0].split(" ")[0]; // e.g. "Chef", "Trainer"
+    const pluralStaff = cleanStaff.endsWith("s") || cleanStaff.toLowerCase().includes("personnel") || cleanStaff.toLowerCase().includes("staff")
+      ? cleanStaff 
+      : cleanStaff + "s";
+
+    setSidebarTerms({
+      clientPlur: t.clientPlur || "Customers",
+      inventoryLbl: cleanInv.charAt(0).toUpperCase() + cleanInv.slice(1),
+      staffLbl: pluralStaff.charAt(0).toUpperCase() + pluralStaff.slice(1)
+    });
+  }, [pathname]);
 
   // Listen to Firebase Auth state
   useEffect(() => {
@@ -80,10 +105,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Digital Twin", path: "/dashboard/digital-twin", icon: Network, highlight: true },
     { name: "Simulation Lab", path: "/dashboard/simulation", icon: PlayCircle },
     { name: "AI Copilot", path: "/dashboard/copilot", icon: MessageSquare },
-    { name: "Customers", path: "/dashboard/customers", icon: Users },
-    { name: "Inventory", path: "/dashboard/inventory", icon: Database },
+    { name: sidebarTerms.clientPlur, path: "/dashboard/customers", icon: Users },
+    { name: sidebarTerms.inventoryLbl, path: "/dashboard/inventory", icon: Database },
     { name: "Finance", path: "/dashboard/finance", icon: DollarSign },
-    { name: "Employees", path: "/dashboard/employees", icon: Activity },
+    { name: sidebarTerms.staffLbl, path: "/dashboard/employees", icon: Activity },
     { name: "Reports", path: "/dashboard/reports", icon: FileText },
     { name: "Settings", path: "/dashboard/settings", icon: Settings },
   ];
