@@ -28,8 +28,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     setAlerts(initialEvents);
-    // Live clock update mock
-    const timer = setInterval(() => {
+    
+    // Compute current time immediately on mount
+    const updateTime = () => {
       const d = new Date();
       let h = d.getHours();
       const m = d.getMinutes().toString().padStart(2, '0');
@@ -37,7 +38,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       h = h % 12;
       h = h ? h : 12;
       setTimeStr(`${h}:${m} ${amp}`);
-    }, 60000);
+    };
+    
+    updateTime();
+    const timer = setInterval(updateTime, 60000);
     return () => clearInterval(timer);
   }, []);
 
