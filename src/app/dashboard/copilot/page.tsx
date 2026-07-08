@@ -51,7 +51,7 @@ export default function AICopilot() {
     }
   }, [messages, typing]);
 
-  const handleSend = (text: string) => {
+  const handleSend = async (text: string) => {
     if (!text.trim()) return;
 
     const userMsg: Message = {
@@ -63,6 +63,34 @@ export default function AICopilot() {
     setMessages((prev) => [...prev, userMsg]);
     setInputValue("");
     setTyping(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          messages: [{ role: "user", content: text }]
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `a-${Date.now()}`,
+            sender: "assistant",
+            text: data.reply
+          }
+        ]);
+        setTyping(false);
+        return;
+      }
+    } catch (err) {
+      console.error("Gemini API call failed, falling back to mock:", err);
+    }
 
     // Mock AI responses based on prompt
     setTimeout(() => {
