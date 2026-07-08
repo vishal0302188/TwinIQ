@@ -8,7 +8,8 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
+import { doc, setDoc, getDocs, collection, deleteDoc } from "firebase/firestore";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "csv" | "firebase">("profile");
@@ -176,8 +177,6 @@ export default function SettingsPage() {
   const handleSeedDatabase = async () => {
     setSeeding(true);
     try {
-      const { db } = await import("@/lib/firebase");
-      const { doc, setDoc } = await import("firebase/firestore");
       const { getMockData } = await import("@/lib/mockData");
 
       if (!db) {
@@ -221,9 +220,6 @@ export default function SettingsPage() {
     if (!confirm("Are you sure you want to clear all data? This will delete all records from Firestore and clear local fallback lists.")) return;
     setClearing(true);
     try {
-      const { db } = await import("@/lib/firebase");
-      const { doc, deleteDoc, getDocs, collection } = await import("firebase/firestore");
-
       if (db) {
         // Clear customers
         const custSnap = await getDocs(collection(db, "customers"));
@@ -291,9 +287,6 @@ export default function SettingsPage() {
 
       if (rowCount > 0) {
         try {
-          const { db } = await import("@/lib/firebase");
-          const { doc, setDoc, getDocs, collection } = await import("firebase/firestore");
-          
           if (db) {
             // Parse CSV records
             const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ''));
