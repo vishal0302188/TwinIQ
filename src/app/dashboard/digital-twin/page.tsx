@@ -287,8 +287,9 @@ export default function DigitalTwinPage() {
               <div className="p-6 border-t border-white/5">
                 {selectedNode.id !== "business" ? (
                   <Link href={
+                    selectedNode.id === "sales" ? "/dashboard/sales" :
                     selectedNode.id === "suppliers" || selectedNode.id === "inventory" ? "/dashboard/inventory" :
-                    selectedNode.id === "sales" || selectedNode.id === "marketing" || selectedNode.id === "customers" ? "/dashboard/customers" :
+                    selectedNode.id === "marketing" || selectedNode.id === "customers" ? "/dashboard/customers" :
                     selectedNode.id === "operations" ? "/dashboard/simulation" :
                     `/dashboard/${selectedNode.id}`
                   }>

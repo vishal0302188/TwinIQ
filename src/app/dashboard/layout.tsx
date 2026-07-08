@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Network, PlayCircle, MessageSquare, Users, Database,
   DollarSign, Activity, FileText, Settings, Sparkles, Menu, Bell, Search,
-  Power, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, X
+  Power, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, X, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { initialEvents, BusinessEvent } from "@/lib/mockData";
@@ -108,6 +108,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: sidebarTerms.clientPlur, path: "/dashboard/customers", icon: Users },
     { name: sidebarTerms.inventoryLbl, path: "/dashboard/inventory", icon: Database },
     { name: "Finance", path: "/dashboard/finance", icon: DollarSign },
+    { name: "Sales Log", path: "/dashboard/sales", icon: TrendingUp },
     { name: sidebarTerms.staffLbl, path: "/dashboard/employees", icon: Activity },
     { name: "Reports", path: "/dashboard/reports", icon: FileText },
     { name: "Settings", path: "/dashboard/settings", icon: Settings },
