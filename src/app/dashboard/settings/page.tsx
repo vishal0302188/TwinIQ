@@ -284,16 +284,71 @@ export default function SettingsPage() {
     setUploading(true);
     
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const text = event.target?.result as string;
       const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== "");
-      // Count rows excluding header
       const rowCount = Math.max(0, lines.length - 1);
+
+      if (rowCount > 0) {
+        try {
+          const { db } = await import("@/lib/firebase");
+          const { doc, setDoc, getDocs, collection } = await import("firebase/firestore");
+          
+          if (db) {
+            // Parse CSV records
+            const headers = lines[0].split(",").map(h => h.trim().replace(/^"|"$/g, ''));
+            const dataRows = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+              const cols = lines[i].split(",").map(c => c.trim().replace(/^"|"$/g, ''));
+              if (cols.length < headers.length) continue;
+              
+              const row: any = {};
+              headers.forEach((header, idx) => {
+                row[header] = cols[idx];
+              });
+              dataRows.push(row);
+            }
+
+            // Write first 35 detailed logs to sales collection
+            for (let i = 0; i < Math.min(dataRows.length, 35); i++) {
+              const row = dataRows[i];
+              const txnId = row.Transaction_ID || `txn-${Date.now()}-${i}`;
+              await setDoc(doc(db, "sales", txnId), {
+                id: txnId,
+                customer: row.Customer_Name || "Imported Customer",
+                item: row.Product_Item || "Imported Product",
+                amount: Number(row.Amount_INR || 0),
+                date: row.Date || new Date().toISOString().split('T')[0],
+                channel: row.Payment_Channel || "Stripe Import",
+                status: row.Status || "Success"
+              });
+            }
+
+            // Sum total success ledger values and update finance metrics
+            const successRows = dataRows.filter(r => r.Status === "Success");
+            const totalCsvRev = successRows.reduce((sum, r) => sum + Number(r.Amount_INR || 0), 0);
+
+            const finSnap = await getDocs(collection(db, "finance"));
+            if (!finSnap.empty) {
+              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+              const latestData = latestDoc.data();
+              await setDoc(doc(db, "finance", latestDoc.id), {
+                ...latestData,
+                revenue: Number(latestData.revenue || 0) + totalCsvRev,
+                profit: Number(latestData.profit || 0) + Math.round(totalCsvRev * 0.31)
+              });
+            }
+          }
+        } catch (err) {
+          console.error("Firestore CSV sync error:", err);
+        }
+      }
       
       setTimeout(() => {
         setUploading(false);
         setUploadedRecords(rowCount);
-      }, 1200);
+      }, 1500);
     };
     reader.readAsText(file);
   };
