@@ -407,14 +407,14 @@ export default function FinancePage() {
                             <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-emerald-950/60 text-emerald-400 border-emerald-900/20">
                               {inv.status}
                             </span>
+                          ) : inv.status === "Overdue" ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-red-950/60 text-red-400 border-red-900/20">
+                              {inv.status}
+                            </span>
                           ) : (
-                            <button
-                              onClick={() => handleRazorpayPayment(inv)}
-                              className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 flex items-center gap-1 border bg-blue-950/60 text-blue-400 border-blue-900/20 hover:bg-blue-600 hover:text-white transition-all duration-200 cursor-pointer"
-                              title="Pay via Razorpay"
-                            >
-                              <CreditCard size={10} /> Pay
-                            </button>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-amber-950/60 text-amber-400 border-amber-900/20">
+                              {inv.status}
+                            </span>
                           )}
                         </div>
 
