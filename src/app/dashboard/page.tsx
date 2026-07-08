@@ -219,15 +219,36 @@ export default function MainDashboard() {
             <Card className="lg:col-span-4 flex flex-col items-center justify-center py-8 border-white/10 relative overflow-hidden bg-slate-950/60 shadow-[0_4px_30px_rgba(0,0,0,0.4)]">
               <Gauge score={businessHealth} size={190} />
               
-              <div className="mt-6 text-center max-w-[240px]">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Twin Health Status</h4>
-                <p className="text-xs text-emerald-400 font-semibold mt-1 flex items-center justify-center gap-1">
-                  <CheckCircle size={12} /> High Efficiency Standard
-                </p>
-                <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
-                  Ops systems are running smoothly. {kpis.find(k => k.name === "Inventory Health")?.score !== 100 ? "1 supply constraint detected." : "All systems optimized."}
-                </p>
-              </div>
+              {(() => {
+                const status = businessHealth >= 85 ? {
+                  label: "High Efficiency Standard",
+                  color: "text-emerald-400",
+                  icon: <CheckCircle size={12} />,
+                  desc: `Ops systems are running smoothly. ${kpis.find(k => k.name.includes("Health"))?.score !== 100 ? "1 supply constraint detected." : "All systems optimized."}`
+                } : businessHealth >= 70 ? {
+                  label: "Warning: Marginal Performance",
+                  color: "text-amber-400",
+                  icon: <AlertCircle size={12} />,
+                  desc: "Minor bottlenecks or low-stock warning indicators detected. Under active twin simulation."
+                } : {
+                  label: "Critical System Alert",
+                  color: "text-red-500",
+                  icon: <ShieldAlert size={12} className="animate-pulse" />,
+                  desc: "Severe operational failures or pipeline constraints detected. Action recommended immediately."
+                };
+
+                return (
+                  <div className="mt-6 text-center max-w-[240px]">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Twin Health Status</h4>
+                    <p className={`text-xs ${status.color} font-semibold mt-1 flex items-center justify-center gap-1`}>
+                      {status.icon} {status.label}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                      {status.desc}
+                    </p>
+                  </div>
+                );
+              })()}
             </Card>
 
             {/* KPI Cards Grid */}
