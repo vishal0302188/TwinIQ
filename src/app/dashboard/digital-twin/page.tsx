@@ -286,7 +286,12 @@ export default function DigitalTwinPage() {
               {/* Action buttons depending on node type */}
               <div className="p-6 border-t border-white/5">
                 {selectedNode.id !== "business" ? (
-                  <Link href={`/dashboard/${selectedNode.id === "suppliers" ? "inventory" : selectedNode.id === "marketing" || selectedNode.id === "operations" ? "page" : selectedNode.id}`}>
+                  <Link href={
+                    selectedNode.id === "suppliers" || selectedNode.id === "inventory" ? "/dashboard/inventory" :
+                    selectedNode.id === "sales" || selectedNode.id === "marketing" || selectedNode.id === "customers" ? "/dashboard/customers" :
+                    selectedNode.id === "operations" ? "/dashboard/simulation" :
+                    `/dashboard/${selectedNode.id}`
+                  }>
                     <Button className="w-full flex items-center justify-center gap-1.5">
                       Open {selectedNode.label} Management <ArrowRight size={14} />
                     </Button>
