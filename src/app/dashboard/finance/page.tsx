@@ -62,6 +62,42 @@ export default function FinancePage() {
   };
 
   const handleRazorpayPayment = async (inv: Invoice) => {
+    const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+
+    // Fallback if no real Razorpay Key ID is configured in environment
+    if (!key || key === "rzp_test_5g2g8s5g88s2g8" || key.includes("test")) {
+      const confirmSim = window.confirm(
+        `[TwinIQ Sandbox Test Mode]\n\nNo live Razorpay Key ID was detected in your Vercel environment.\n\nDo you want to simulate a successful payment of ${formatCurrency(inv.amount)} for Invoice ${inv.id}?`
+      );
+      if (confirmSim) {
+        try {
+          const updatedInvoice: Invoice = { ...inv, status: "Paid" };
+          
+          if (db) {
+            await setDoc(doc(db, "invoices", inv.id), updatedInvoice);
+            // Update revenue in finance collection as well
+            const finSnap = await getDocs(collection(db, "finance"));
+            if (!finSnap.empty) {
+              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+              const latestData = latestDoc.data();
+              await setDoc(doc(db, "finance", latestDoc.id), {
+                ...latestData,
+                revenue: Number(latestData.revenue || 0) + inv.amount,
+                profit: Number(latestData.profit || 0) + Math.round(inv.amount * 0.31)
+              });
+            }
+          }
+
+          setInvoices(prev => prev.map(item => item.id === inv.id ? updatedInvoice : item));
+          alert(`Simulated Payment Successful!\nPayment ID: pay_sim_${Math.random().toString(36).substring(2, 9)}`);
+          window.location.reload(); // Refresh to recalculate dashboard metrics
+        } catch (err) {
+          console.error("Error updating invoice during simulated payment:", err);
+        }
+      }
+      return;
+    }
+
     const res = await loadRazorpayScript();
     if (!res) {
       alert("Failed to load Razorpay SDK. Check your internet connection.");
@@ -69,7 +105,7 @@ export default function FinancePage() {
     }
 
     const options = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_5g2g8s5g88s2g8", // Test Key Fallback
+      key: key,
       amount: inv.amount * 100, // in paise
       currency: "INR",
       name: "TwinIQ Platform",
@@ -80,7 +116,7 @@ export default function FinancePage() {
           
           if (db) {
             await setDoc(doc(db, "invoices", inv.id), updatedInvoice);
-            // Optionally update revenue in finance collection as well
+            // Update revenue in finance collection as well
             const finSnap = await getDocs(collection(db, "finance"));
             if (!finSnap.empty) {
               const latestDoc = finSnap.docs[finSnap.docs.length - 1];
