@@ -20,6 +20,7 @@ interface Invoice {
   status: "Paid" | "Pending" | "Overdue";
   date: string;
   phone?: string;
+  paymentMethod?: "online" | "cash";
 }
 
 interface Payout {
@@ -60,6 +61,7 @@ export default function FinancePage() {
   const [newInvStatus, setNewInvStatus] = useState<"Paid" | "Pending" | "Overdue">("Pending");
   const [newInvDate, setNewInvDate] = useState("");
   const [newInvPhone, setNewInvPhone] = useState("");
+  const [newInvPaymentMethod, setNewInvPaymentMethod] = useState<"online" | "cash">("online");
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
 
   // Edit Invoice states
@@ -70,6 +72,7 @@ export default function FinancePage() {
   const [editInvStatus, setEditInvStatus] = useState<"Paid" | "Pending" | "Overdue">("Pending");
   const [editInvDate, setEditInvDate] = useState("");
   const [editInvPhone, setEditInvPhone] = useState("");
+  const [editInvPaymentMethod, setEditInvPaymentMethod] = useState<"online" | "cash">("online");
   const [updatingInvoice, setUpdatingInvoice] = useState(false);
 
   // Outbound Payout Modal states
@@ -164,18 +167,33 @@ export default function FinancePage() {
     setSubmittingInvoice(true);
 
     const generatedId = `inv-${Math.floor(1000 + Math.random() * 9000)}`;
+    const isCash = newInvPaymentMethod === "cash";
+    const finalStatus = isCash ? "Paid" : newInvStatus;
     const newInvoice: Invoice = {
       id: generatedId,
       client: newInvClient,
       amount: Number(newInvAmount),
-      status: newInvStatus,
+      status: finalStatus,
       date: newInvDate,
-      phone: newInvPhone || "9876543210"
+      phone: newInvPhone || "9876543210",
+      paymentMethod: newInvPaymentMethod
     };
 
     try {
       if (db) {
         await setDoc(doc(db, "invoices", generatedId), newInvoice);
+        if (finalStatus === "Paid") {
+          const finSnap = await getDocs(collection(db, "finance"));
+          if (!finSnap.empty) {
+            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+            const latestData = latestDoc.data();
+            await setDoc(doc(db, "finance", latestDoc.id), {
+              ...latestData,
+              revenue: Number(latestData.revenue || 0) + newInvoice.amount,
+              profit: Number(latestData.profit || 0) + Math.round(newInvoice.amount * 0.31)
+            });
+          }
+        }
       }
       const updatedList = [newInvoice, ...invoices];
       setInvoices(updatedList);
@@ -186,7 +204,12 @@ export default function FinancePage() {
       setNewInvStatus("Pending");
       setNewInvDate("");
       setNewInvPhone("");
+      setNewInvPaymentMethod("online");
       setIsAddModalOpen(false);
+      
+      if (finalStatus === "Paid") {
+        window.location.reload();
+      }
     } catch (err) {
       console.error("Failed to save new invoice:", err);
       alert("Failed to save invoice: " + err);
@@ -203,6 +226,7 @@ export default function FinancePage() {
     setEditInvStatus(inv.status);
     setEditInvDate(inv.date);
     setEditInvPhone(inv.phone || "");
+    setEditInvPaymentMethod(inv.paymentMethod || "online");
     setIsEditModalOpen(true);
   };
 
@@ -211,18 +235,34 @@ export default function FinancePage() {
     if (!selectedInvoice) return;
     setUpdatingInvoice(true);
 
+    const isCash = editInvPaymentMethod === "cash";
+    const finalStatus = isCash ? "Paid" : editInvStatus;
     const updatedInvoice: Invoice = {
       id: selectedInvoice.id,
       client: editInvClient,
       amount: Number(editInvAmount),
-      status: editInvStatus,
+      status: finalStatus,
       date: editInvDate,
-      phone: editInvPhone || "9876543210"
+      phone: editInvPhone || "9876543210",
+      paymentMethod: editInvPaymentMethod
     };
 
     try {
       if (db) {
         await setDoc(doc(db, "invoices", selectedInvoice.id), updatedInvoice);
+        // If status changed to Paid, credit the amount
+        if (finalStatus === "Paid" && selectedInvoice.status !== "Paid") {
+          const finSnap = await getDocs(collection(db, "finance"));
+          if (!finSnap.empty) {
+            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+            const latestData = latestDoc.data();
+            await setDoc(doc(db, "finance", latestDoc.id), {
+              ...latestData,
+              revenue: Number(latestData.revenue || 0) + updatedInvoice.amount,
+              profit: Number(latestData.profit || 0) + Math.round(updatedInvoice.amount * 0.31)
+            });
+          }
+        }
       }
       const updatedList = invoices.map(inv => inv.id === selectedInvoice.id ? updatedInvoice : inv);
       setInvoices(updatedList);
@@ -230,6 +270,10 @@ export default function FinancePage() {
       
       setIsEditModalOpen(false);
       setSelectedInvoice(null);
+      
+      if (finalStatus === "Paid" && selectedInvoice.status !== "Paid") {
+        window.location.reload();
+      }
     } catch (err) {
       console.error("Failed to update invoice:", err);
       alert("Failed to update invoice details: " + err);
@@ -526,7 +570,7 @@ export default function FinancePage() {
                             <div className="font-bold text-slate-200">{formatCurrency(inv.amount)}</div>
                             {inv.status === "Paid" ? (
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-emerald-950/60 text-emerald-400 border-emerald-900/20 uppercase tracking-wider">
-                                Paid
+                                {inv.paymentMethod === "cash" ? "💵 Cash" : "💳 Paid"}
                               </span>
                             ) : inv.status === "Overdue" ? (
                               <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-red-950/60 text-red-400 border-red-900/20 uppercase tracking-wider">
@@ -541,7 +585,7 @@ export default function FinancePage() {
 
                           {/* Action Overlay */}
                           <div className="flex gap-1.5 items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
-                            {inv.status !== "Paid" && (
+                            {inv.status !== "Paid" && inv.paymentMethod !== "cash" && (
                               <button 
                                 onClick={() => triggerWhatsAppShare(inv)} 
                                 className="text-emerald-400 hover:text-emerald-300 p-1.5 rounded bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/20 cursor-pointer flex items-center gap-1"
@@ -681,6 +725,24 @@ export default function FinancePage() {
                 />
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">Payment Method</label>
+                <select
+                  value={newInvPaymentMethod}
+                  onChange={(e) => {
+                    const val = e.target.value as "online" | "cash";
+                    setNewInvPaymentMethod(val);
+                    if (val === "cash") {
+                      setNewInvStatus("Paid");
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="online">Online Checkout Link (Razorpay)</option>
+                  <option value="cash">Cash / Offline Settlement</option>
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-400">Due Date</label>
@@ -694,7 +756,8 @@ export default function FinancePage() {
                   <label className="text-xs font-semibold text-slate-400">Billing Status</label>
                   <select
                     value={newInvStatus} onChange={(e) => setNewInvStatus(e.target.value as any)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                    disabled={newInvPaymentMethod === "cash"}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
                   >
                     <option value="Pending">Pending</option>
                     <option value="Paid">Paid</option>
@@ -753,6 +816,24 @@ export default function FinancePage() {
                 />
               </div>
 
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">Payment Method</label>
+                <select
+                  value={editInvPaymentMethod}
+                  onChange={(e) => {
+                    const val = e.target.value as "online" | "cash";
+                    setEditInvPaymentMethod(val);
+                    if (val === "cash") {
+                      setEditInvStatus("Paid");
+                    }
+                  }}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                >
+                  <option value="online">Online Checkout Link (Razorpay)</option>
+                  <option value="cash">Cash / Offline Settlement</option>
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-400">Due Date</label>
@@ -766,7 +847,8 @@ export default function FinancePage() {
                   <label className="text-xs font-semibold text-slate-400">Billing Status</label>
                   <select
                     value={editInvStatus} onChange={(e) => setEditInvStatus(e.target.value as any)}
-                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                    disabled={editInvPaymentMethod === "cash"}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500 disabled:opacity-50"
                   >
                     <option value="Paid">Paid</option>
                     <option value="Pending">Pending</option>
