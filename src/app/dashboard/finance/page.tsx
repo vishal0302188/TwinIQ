@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { 
   DollarSign, FileText, ArrowUpRight, ArrowDownRight, 
-  Wallet, RefreshCw, Calendar, CheckCircle2, AlertTriangle, X, Plus, Trash2, Edit2, CreditCard
+  Wallet, RefreshCw, Calendar, CheckCircle2, AlertTriangle, X, Plus, Trash2, Edit2, CreditCard, Send
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,26 +19,47 @@ interface Invoice {
   amount: number;
   status: "Paid" | "Pending" | "Overdue";
   date: string;
+  phone?: string;
+}
+
+interface Payout {
+  id: string;
+  vendor: string;
+  amount: number;
+  status: "Paid" | "Pending" | "Overdue";
+  dueDate: string;
+  category: string;
+  bankAccount: string;
 }
 
 const initialInvoices: Invoice[] = [
-  { id: "inv-2041", client: "MalhotraTech Corp", amount: 150000, status: "Paid", date: "2026-06-15" },
-  { id: "inv-2042", client: "Stellar Brands", amount: 420000, status: "Overdue", date: "2026-05-18" },
-  { id: "inv-2043", client: "Apex Ventures", amount: 120000, status: "Paid", date: "2026-06-01" },
-  { id: "inv-2044", client: "Nimbus Education", amount: 80000, status: "Pending", date: "2026-06-25" }
+  { id: "inv-2041", client: "MalhotraTech Corp", amount: 150000, status: "Paid", date: "2026-06-15", phone: "9876543210" },
+  { id: "inv-2042", client: "Stellar Brands", amount: 420000, status: "Overdue", date: "2026-05-18", phone: "9123456780" },
+  { id: "inv-2043", client: "Apex Ventures", amount: 120000, status: "Paid", date: "2026-06-01", phone: "9988776655" },
+  { id: "inv-2044", client: "Nimbus Education", amount: 80000, status: "Pending", date: "2026-06-25", phone: "8877665544" }
+];
+
+const initialPayouts: Payout[] = [
+  { id: "pay-101", vendor: "Amazon Web Services", amount: 120000, status: "Pending", dueDate: "2026-07-15", category: "Cloud Infrastructure", bankAccount: "HDFC A/C 9876" },
+  { id: "pay-102", vendor: "Silicon Chip Foundry", amount: 480000, status: "Overdue", dueDate: "2026-07-02", category: "Hardware Materials", bankAccount: "SBI A/C 5543" },
+  { id: "pay-103", vendor: "FedEx Logistical Corp", amount: 35000, status: "Paid", dueDate: "2026-06-28", category: "Logistics & Freight", bankAccount: "ICICI A/C 2211" }
 ];
 
 export default function FinancePage() {
+  const [activeTab, setActiveTab] = useState<"receivables" | "payables">("receivables");
+  
   const [finRecords, setFinRecords] = useState<FinanceRecord[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Add Invoice Modal states
+  // Inbound Invoice Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newInvClient, setNewInvClient] = useState("");
   const [newInvAmount, setNewInvAmount] = useState(75000);
   const [newInvStatus, setNewInvStatus] = useState<"Paid" | "Pending" | "Overdue">("Pending");
   const [newInvDate, setNewInvDate] = useState("");
+  const [newInvPhone, setNewInvPhone] = useState("");
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
 
   // Edit Invoice states
@@ -48,106 +69,22 @@ export default function FinancePage() {
   const [editInvAmount, setEditInvAmount] = useState(75000);
   const [editInvStatus, setEditInvStatus] = useState<"Paid" | "Pending" | "Overdue">("Pending");
   const [editInvDate, setEditInvDate] = useState("");
+  const [editInvPhone, setEditInvPhone] = useState("");
   const [updatingInvoice, setUpdatingInvoice] = useState(false);
 
-  // Razorpay payment integration
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
+  // Outbound Payout Modal states
+  const [isAddPayoutOpen, setIsAddPayoutOpen] = useState(false);
+  const [newPayVendor, setNewPayVendor] = useState("");
+  const [newPayAmount, setNewPayAmount] = useState(45000);
+  const [newPayCategory, setNewPayCategory] = useState("Operating Supplies");
+  const [newPayBankAccount, setNewPayBankAccount] = useState("");
+  const [newPayDueDate, setNewPayDueDate] = useState("");
+  const [submittingPayout, setSubmittingPayout] = useState(false);
 
-  const handleRazorpayPayment = async (inv: Invoice) => {
-    const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-
-    // Fallback if no real Razorpay Key ID is configured in environment
-    if (!key || key === "rzp_test_5g2g8s5g88s2g8" || key.includes("test")) {
-      const confirmSim = window.confirm(
-        `[TwinIQ Sandbox Test Mode]\n\nNo live Razorpay Key ID was detected in your Vercel environment.\n\nDo you want to simulate a successful payment of ${formatCurrency(inv.amount)} for Invoice ${inv.id}?`
-      );
-      if (confirmSim) {
-        try {
-          const updatedInvoice: Invoice = { ...inv, status: "Paid" };
-          
-          if (db) {
-            await setDoc(doc(db, "invoices", inv.id), updatedInvoice);
-            // Update revenue in finance collection as well
-            const finSnap = await getDocs(collection(db, "finance"));
-            if (!finSnap.empty) {
-              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-              const latestData = latestDoc.data();
-              await setDoc(doc(db, "finance", latestDoc.id), {
-                ...latestData,
-                revenue: Number(latestData.revenue || 0) + inv.amount,
-                profit: Number(latestData.profit || 0) + Math.round(inv.amount * 0.31)
-              });
-            }
-          }
-
-          setInvoices(prev => prev.map(item => item.id === inv.id ? updatedInvoice : item));
-          alert(`Simulated Payment Successful!\nPayment ID: pay_sim_${Math.random().toString(36).substring(2, 9)}`);
-          window.location.reload(); // Refresh to recalculate dashboard metrics
-        } catch (err) {
-          console.error("Error updating invoice during simulated payment:", err);
-        }
-      }
-      return;
-    }
-
-    const res = await loadRazorpayScript();
-    if (!res) {
-      alert("Failed to load Razorpay SDK. Check your internet connection.");
-      return;
-    }
-
-    const options = {
-      key: key,
-      amount: inv.amount * 100, // in paise
-      currency: "INR",
-      name: "TwinIQ Platform",
-      description: `Payment for Invoice ${inv.id}`,
-      handler: async function (response: any) {
-        try {
-          const updatedInvoice: Invoice = { ...inv, status: "Paid" };
-          
-          if (db) {
-            await setDoc(doc(db, "invoices", inv.id), updatedInvoice);
-            // Update revenue in finance collection as well
-            const finSnap = await getDocs(collection(db, "finance"));
-            if (!finSnap.empty) {
-              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-              const latestData = latestDoc.data();
-              await setDoc(doc(db, "finance", latestDoc.id), {
-                ...latestData,
-                revenue: Number(latestData.revenue || 0) + inv.amount,
-                profit: Number(latestData.profit || 0) + Math.round(inv.amount * 0.31) // Keep EBITDA margin
-              });
-            }
-          }
-
-          setInvoices(prev => prev.map(item => item.id === inv.id ? updatedInvoice : item));
-          alert(`Payment Successful!\nRazorpay Payment ID: ${response.razorpay_payment_id}`);
-          window.location.reload(); // Refresh to recalculate dashboard metrics
-        } catch (err) {
-          console.error("Error updating invoice after payment:", err);
-        }
-      },
-      prefill: {
-        name: inv.client,
-        email: "accounts@" + inv.client.toLowerCase().replace(/ /g, "") + ".com"
-      },
-      theme: {
-        color: "#3b82f6"
-      }
-    };
-
-    const paymentObject = new (window as any).Razorpay(options);
-    paymentObject.open();
-  };
+  // Simulated Payout Modal states
+  const [isPayoutConfirmOpen, setIsPayoutConfirmOpen] = useState(false);
+  const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
+  const [processingPayout, setProcessingPayout] = useState(false);
 
   useEffect(() => {
     async function loadFinance() {
@@ -163,13 +100,10 @@ export default function FinancePage() {
             data.sort((a, b) => monthsOrder.indexOf(a.month) - monthsOrder.indexOf(b.month));
             setFinRecords(data);
           } else {
-            if (typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true") {
-              setFinRecords([]);
-            } else {
-              setFinRecords(initialFinance);
-            }
+            setFinRecords(initialFinance);
           }
 
+          // Load Receivables (Client Invoices)
           const invSnapshot = await getDocs(collection(db, "invoices"));
           if (!invSnapshot.empty) {
             const invData: Invoice[] = [];
@@ -177,31 +111,53 @@ export default function FinancePage() {
               invData.push(docSnap.data() as Invoice);
             });
             setInvoices(invData);
-            setLoading(false);
-            return;
           } else {
-            if (typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true") {
-              setInvoices([]);
-              setLoading(false);
-              return;
-            }
+            setInvoices(initialInvoices);
           }
+
+          // Load Payables (Supplier Payouts)
+          const paySnapshot = await getDocs(collection(db, "payouts"));
+          if (!paySnapshot.empty) {
+            const payData: Payout[] = [];
+            paySnapshot.forEach((docSnap) => {
+              payData.push(docSnap.data() as Payout);
+            });
+            setPayouts(payData);
+          } else {
+            setPayouts(initialPayouts);
+          }
+          setLoading(false);
+          return;
         }
       } catch (err) {
         console.error("Firestore finance load error, using local fallback:", err);
       }
-      if (typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true") {
-        setFinRecords([]);
-        setInvoices([]);
+      
+      // Local fallbacks
+      if (typeof window !== "undefined") {
+        const cachedInv = localStorage.getItem("twiniq_mock_invoices");
+        const cachedPay = localStorage.getItem("twiniq_mock_payouts");
+        setInvoices(cachedInv ? JSON.parse(cachedInv) : initialInvoices);
+        setPayouts(cachedPay ? JSON.parse(cachedPay) : initialPayouts);
       } else {
-        setFinRecords(initialFinance);
         setInvoices(initialInvoices);
+        setPayouts(initialPayouts);
       }
+      setFinRecords(initialFinance);
       setLoading(false);
     }
     loadFinance();
   }, []);
 
+  // Save changes helper
+  const syncLocalCache = (newInvoices: Invoice[], newPayouts: Payout[]) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("twiniq_mock_invoices", JSON.stringify(newInvoices));
+      localStorage.setItem("twiniq_mock_payouts", JSON.stringify(newPayouts));
+    }
+  };
+
+  // Add Client Invoice
   const handleAddInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newInvClient || !newInvDate) return;
@@ -213,33 +169,40 @@ export default function FinancePage() {
       client: newInvClient,
       amount: Number(newInvAmount),
       status: newInvStatus,
-      date: newInvDate
+      date: newInvDate,
+      phone: newInvPhone || "9876543210"
     };
 
     try {
       if (db) {
         await setDoc(doc(db, "invoices", generatedId), newInvoice);
       }
-      setInvoices(prev => [newInvoice, ...prev]);
+      const updatedList = [newInvoice, ...invoices];
+      setInvoices(updatedList);
+      syncLocalCache(updatedList, payouts);
+      
       setNewInvClient("");
       setNewInvAmount(75000);
       setNewInvStatus("Pending");
       setNewInvDate("");
+      setNewInvPhone("");
       setIsAddModalOpen(false);
     } catch (err) {
       console.error("Failed to save new invoice:", err);
-      alert("Failed to save invoice to Firestore: " + err);
+      alert("Failed to save invoice: " + err);
     } finally {
       setSubmittingInvoice(false);
     }
   };
 
+  // Edit/Update Client Invoice
   const handleOpenEdit = (inv: Invoice) => {
     setSelectedInvoice(inv);
     setEditInvClient(inv.client);
     setEditInvAmount(inv.amount);
     setEditInvStatus(inv.status);
     setEditInvDate(inv.date);
+    setEditInvPhone(inv.phone || "");
     setIsEditModalOpen(true);
   };
 
@@ -253,14 +216,18 @@ export default function FinancePage() {
       client: editInvClient,
       amount: Number(editInvAmount),
       status: editInvStatus,
-      date: editInvDate
+      date: editInvDate,
+      phone: editInvPhone || "9876543210"
     };
 
     try {
       if (db) {
         await setDoc(doc(db, "invoices", selectedInvoice.id), updatedInvoice);
       }
-      setInvoices(prev => prev.map(inv => inv.id === selectedInvoice.id ? updatedInvoice : inv));
+      const updatedList = invoices.map(inv => inv.id === selectedInvoice.id ? updatedInvoice : inv);
+      setInvoices(updatedList);
+      syncLocalCache(updatedList, payouts);
+      
       setIsEditModalOpen(false);
       setSelectedInvoice(null);
     } catch (err) {
@@ -271,40 +238,181 @@ export default function FinancePage() {
     }
   };
 
+  // Delete Client Invoice
   const handleDeleteInvoice = async (id: string) => {
     if (!confirm("Are you sure you want to delete this invoice?")) return;
     try {
       if (db) {
         await deleteDoc(doc(db, "invoices", id));
       }
-      setInvoices(prev => prev.filter(inv => inv.id !== id));
+      const updatedList = invoices.filter(inv => inv.id !== id);
+      setInvoices(updatedList);
+      syncLocalCache(updatedList, payouts);
     } catch (err) {
       console.error("Failed to delete invoice:", err);
       alert("Failed to delete invoice: " + err);
     }
   };
 
-  // Totals for top metrics
+  // Share to WhatsApp generator
+  const triggerWhatsAppShare = (inv: Invoice) => {
+    if (typeof window === "undefined") return;
+    const clientPhone = inv.phone || "9876543210";
+    const paymentUrl = `${window.location.origin}/pay?id=${inv.id}`;
+    const cleanText = `Dear ${inv.client}, your invoice ${inv.id} for ${formatCurrency(inv.amount)} from TwinIQ Platform is pending. Please review details and pay securely here: ${paymentUrl}`;
+    
+    // Create WhatsApp Web/Mobile redirect URL
+    const waUrl = `https://api.whatsapp.com/send?phone=${clientPhone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(cleanText)}`;
+    window.open(waUrl, "_blank");
+  };
+
+  // Add Supplier Payout
+  const handleAddPayout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPayVendor || !newPayDueDate || !newPayBankAccount) return;
+    setSubmittingPayout(true);
+
+    const generatedId = `pay-${Math.floor(100 + Math.random() * 900)}`;
+    const newPayout: Payout = {
+      id: generatedId,
+      vendor: newPayVendor,
+      amount: Number(newPayAmount),
+      status: "Pending",
+      dueDate: newPayDueDate,
+      category: newPayCategory,
+      bankAccount: newPayBankAccount
+    };
+
+    try {
+      if (db) {
+        await setDoc(doc(db, "payouts", generatedId), newPayout);
+      }
+      const updatedList = [newPayout, ...payouts];
+      setPayouts(updatedList);
+      syncLocalCache(invoices, updatedList);
+
+      setNewPayVendor("");
+      setNewPayAmount(45000);
+      setNewPayCategory("Operating Supplies");
+      setNewPayBankAccount("");
+      setNewPayDueDate("");
+      setIsAddPayoutOpen(false);
+    } catch (err) {
+      console.error("Failed to log supplier bill:", err);
+      alert("Failed to save supplier bill: " + err);
+    } finally {
+      setSubmittingPayout(false);
+    }
+  };
+
+  // Delete Supplier Payout
+  const handleDeletePayout = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this bill?")) return;
+    try {
+      if (db) {
+        await deleteDoc(doc(db, "payouts", id));
+      }
+      const updatedList = payouts.filter(p => p.id !== id);
+      setPayouts(updatedList);
+      syncLocalCache(invoices, updatedList);
+    } catch (err) {
+      console.error("Failed to delete bill:", err);
+      alert("Failed to delete bill: " + err);
+    }
+  };
+
+  // Open simulated Payout confirmation
+  const handleOpenPayout = (p: Payout) => {
+    setSelectedPayout(p);
+    setIsPayoutConfirmOpen(true);
+  };
+
+  const handleExecutePayout = async () => {
+    if (!selectedPayout) return;
+    setProcessingPayout(true);
+    
+    // Simulate API bank transfer delays
+    setTimeout(async () => {
+      try {
+        const updatedPayout: Payout = { ...selectedPayout, status: "Paid" };
+        
+        if (db) {
+          await setDoc(doc(db, "payouts", selectedPayout.id), updatedPayout);
+          // Recalculate expenditures & profit metrics inside dashboard collections
+          const finSnap = await getDocs(collection(db, "finance"));
+          if (!finSnap.empty) {
+            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+            const latestData = latestDoc.data();
+            await setDoc(doc(db, "finance", latestDoc.id), {
+              ...latestData,
+              expenses: Number(latestData.expenses || 0) + selectedPayout.amount,
+              profit: Number(latestData.profit || 0) - selectedPayout.amount
+            });
+          }
+        }
+
+        const updatedList = payouts.map(p => p.id === selectedPayout.id ? updatedPayout : p);
+        setPayouts(updatedList);
+        syncLocalCache(invoices, updatedList);
+
+        alert(`IMPS Direct Bank Transfer Complete!\n\nVendor: ${selectedPayout.vendor}\nAmount: ${formatCurrency(selectedPayout.amount)}\nStatus: Settled`);
+        setIsPayoutConfirmOpen(false);
+        setSelectedPayout(null);
+        window.location.reload(); // Refresh page metrics
+      } catch (err) {
+        console.error("Payout update failed:", err);
+      } finally {
+        setProcessingPayout(false);
+      }
+    }, 1500);
+  };
+
+  // Aggregated totals
   const currentFin = finRecords.length > 0 ? finRecords[finRecords.length - 1] : { revenue: 0, expenses: 0, profit: 0, cashFlow: 0 };
-  const outstandingAmount = invoices
+  const outstandingReceivables = invoices
     .filter(inv => inv.status !== "Paid")
     .reduce((sum, inv) => sum + inv.amount, 0);
 
+  const outstandingPayables = payouts
+    .filter(p => p.status !== "Paid")
+    .reduce((sum, p) => sum + p.amount, 0);
+
   return (
     <div className="space-y-6">
-      {/* Title */}
+      {/* Title Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-white flex items-center gap-2">
             <DollarSign size={28} className="text-blue-500" /> Financial Intelligence Ledger
           </h1>
           <p className="text-slate-400 text-xs mt-1">
-            Track revenue margins, operational expenditures, accounts receivables, and billing cycles.
+            Track net revenue, outgoing accounts payables, client invoices, and supplier payments.
           </p>
         </div>
-        <Button size="sm" className="flex items-center gap-1" onClick={() => setIsAddModalOpen(true)}>
-          <FileText size={14} /> New Invoice Billing
-        </Button>
+
+        {/* Tab selector */}
+        <div className="flex gap-2 bg-slate-900/60 p-1.5 rounded-2xl border border-white/5 w-fit shrink-0">
+          <button
+            onClick={() => setActiveTab("receivables")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === "receivables"
+                ? "bg-blue-600/20 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <ArrowDownRight size={14} /> Inbound (Receivables)
+          </button>
+          <button
+            onClick={() => setActiveTab("payables")}
+            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === "payables"
+                ? "bg-red-600/20 text-red-400 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]"
+                : "text-slate-400 hover:text-white"
+            }`}
+          >
+            <ArrowUpRight size={14} /> Outbound (Payables)
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -314,7 +422,7 @@ export default function FinancePage() {
         </div>
       ) : (
         <>
-          {/* CORE FINANCIAL MINI CARDS */}
+          {/* TOP CARDS METRICS BAR */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
             <Card className="border-white/5 p-4 flex flex-col justify-between min-h-[110px]">
               <div>
@@ -347,19 +455,25 @@ export default function FinancePage() {
             </Card>
 
             <Card className="border-white/5 p-4 flex flex-col justify-between min-h-[110px]">
-              <div>
-                <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Outstanding Receivables</span>
-                <span className="text-2xl font-extrabold text-amber-400 mt-1.5 block">{formatCurrency(outstandingAmount)}</span>
-              </div>
-              <span className="text-[10px] text-amber-400 flex items-center gap-1 font-semibold mt-2">
-                <AlertTriangle size={12} /> {invoices.filter(inv => inv.status !== "Paid").length} Invoices pending
-              </span>
+              {activeTab === "receivables" ? (
+                <div>
+                  <span className="text-[10px] text-amber-500 block uppercase font-bold tracking-wider">Outstanding Receivables</span>
+                  <span className="text-2xl font-extrabold text-amber-400 mt-1.5 block">{formatCurrency(outstandingReceivables)}</span>
+                  <span className="text-[10px] text-slate-500 block mt-2 font-semibold">From client invoices</span>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-[10px] text-rose-500 block uppercase font-bold tracking-wider">Outstanding Payables</span>
+                  <span className="text-2xl font-extrabold text-rose-400 mt-1.5 block">{formatCurrency(outstandingPayables)}</span>
+                  <span className="text-[10px] text-slate-500 block mt-2 font-semibold">Due to suppliers</span>
+                </div>
+              )}
             </Card>
           </div>
 
-          {/* TREND GRAPH + INVOICES LIST */}
+          {/* MAIN SPACE split */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* EBITDA Bar Chart */}
+            {/* MONTHLY PROFITABILITY TRENDS */}
             <Card className="lg:col-span-7 border-white/5">
               <CardHeader>
                 <CardTitle className="text-md font-bold">Monthly Profitability Streams</CardTitle>
@@ -383,99 +497,177 @@ export default function FinancePage() {
               </CardContent>
             </Card>
 
-            {/* Invoice Feed Table */}
-            <Card className="lg:col-span-5 border-white/5 flex flex-col justify-between">
-              <div>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-md font-bold">Invoices & Billing Feeds</CardTitle>
-                  <CardDescription className="text-xs">Live status tracking for outbound accounts.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
-                  {invoices.map((inv) => (
-                    <div key={inv.id} className="p-3 bg-slate-900/50 border border-slate-800 rounded-xl flex justify-between items-center text-xs group relative hover:border-slate-700/80 transition-all duration-200">
-                      <div>
-                        <span className="text-[10px] font-bold text-slate-500">{inv.id}</span>
-                        <h5 className="font-bold text-white mt-0.5">{inv.client}</h5>
-                        <span className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
-                          <Calendar size={10} /> Due: {inv.date}
-                        </span>
-                      </div>
-                      <div className="text-right flex items-center gap-3">
-                        <div>
-                          <div className="font-bold text-slate-200">{formatCurrency(inv.amount)}</div>
-                          {inv.status === "Paid" ? (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-emerald-950/60 text-emerald-400 border-emerald-900/20">
-                              {inv.status}
-                            </span>
-                          ) : inv.status === "Overdue" ? (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-red-950/60 text-red-400 border-red-900/20">
-                              {inv.status}
-                            </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-amber-950/60 text-amber-400 border-amber-900/20">
-                              {inv.status}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Inline actions revealed on hover */}
-                        <div className="flex gap-1 items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
-                          <button 
-                            onClick={() => handleOpenEdit(inv)} 
-                            className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800/40 cursor-pointer"
-                            title="Edit Invoice"
-                          >
-                            <Edit2 size={12} />
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteInvoice(inv.id)} 
-                            className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
-                            title="Delete Invoice"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                        </div>
-                      </div>
+            {/* TAB 1: CLIENT INVOICES (RECEIVABLES) */}
+            {activeTab === "receivables" && (
+              <Card className="lg:col-span-5 border-white/5 flex flex-col justify-between animate-fadeIn">
+                <div>
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-md font-bold">Inbound Billing & Invoices</CardTitle>
+                      <CardDescription className="text-xs">Client payment tracking ledgers.</CardDescription>
                     </div>
-                  ))}
-                </CardContent>
-              </div>
+                    <Button size="sm" variant="secondary" className="flex items-center gap-1 text-[10px] px-2.5 py-1" onClick={() => setIsAddModalOpen(true)}>
+                      <Plus size={12} /> New Invoice
+                    </Button>
+                  </CardHeader>
 
-              <div className="p-4 border-t border-white/5">
-                <Button variant="secondary" className="w-full flex items-center justify-center gap-1 text-xs" onClick={() => setIsAddModalOpen(true)}>
-                  <Plus size={14} /> Create Invoice Billing
-                </Button>
-              </div>
-            </Card>
+                  <CardContent className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
+                    {invoices.map((inv) => (
+                      <div key={inv.id} className="p-3 bg-slate-900/50 border border-slate-800 rounded-xl flex justify-between items-center text-xs group relative hover:border-slate-700/80 transition-all duration-200">
+                        <div>
+                          <span className="text-[10px] font-bold text-slate-500">{inv.id}</span>
+                          <h5 className="font-bold text-white mt-0.5">{inv.client}</h5>
+                          <span className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
+                            <Calendar size={10} /> Due: {inv.date}
+                          </span>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <div>
+                            <div className="font-bold text-slate-200">{formatCurrency(inv.amount)}</div>
+                            {inv.status === "Paid" ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-emerald-950/60 text-emerald-400 border-emerald-900/20 uppercase tracking-wider">
+                                Paid
+                              </span>
+                            ) : inv.status === "Overdue" ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-red-950/60 text-red-400 border-red-900/20 uppercase tracking-wider">
+                                Overdue
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-amber-950/60 text-amber-400 border-amber-900/20 uppercase tracking-wider">
+                                Pending
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Action Overlay */}
+                          <div className="flex gap-1.5 items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+                            {inv.status !== "Paid" && (
+                              <button 
+                                onClick={() => triggerWhatsAppShare(inv)} 
+                                className="text-emerald-400 hover:text-emerald-300 p-1.5 rounded bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/20 cursor-pointer flex items-center gap-1"
+                                title="Share Payment Link via WhatsApp"
+                              >
+                                <Send size={11} /> <span className="text-[8px] font-bold">Share</span>
+                              </button>
+                            )}
+                            <button 
+                              onClick={() => handleOpenEdit(inv)} 
+                              className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800/40 cursor-pointer"
+                              title="Edit Invoice"
+                            >
+                              <Edit2 size={12} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteInvoice(inv.id)} 
+                              className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
+                              title="Delete Invoice"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </div>
+                <div className="p-3 bg-slate-900/20 text-slate-500 text-[10px] text-center border-t border-slate-900">
+                  Client invoice payment routes correspond dynamically to Wa.me payment notifications.
+                </div>
+              </Card>
+            )}
+
+            {/* TAB 2: SUPPLIER PAYOUTS (PAYABLES) */}
+            {activeTab === "payables" && (
+              <Card className="lg:col-span-5 border-white/5 flex flex-col justify-between animate-fadeIn">
+                <div>
+                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-md font-bold">Outbound Supplier Bills</CardTitle>
+                      <CardDescription className="text-xs">Incoming invoices due to vendors.</CardDescription>
+                    </div>
+                    <Button size="sm" variant="danger" className="flex items-center gap-1 text-[10px] px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-900/20" onClick={() => setIsAddPayoutOpen(true)}>
+                      <Plus size={12} /> Log Bill
+                    </Button>
+                  </CardHeader>
+
+                  <CardContent className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
+                    {payouts.map((p) => (
+                      <div key={p.id} className="p-3 bg-slate-900/50 border border-slate-800 rounded-xl flex justify-between items-center text-xs group relative hover:border-slate-700/80 transition-all duration-200">
+                        <div>
+                          <span className="text-[10px] font-bold text-rose-500/70">{p.id}</span>
+                          <h5 className="font-bold text-white mt-0.5">{p.vendor}</h5>
+                          <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold bg-slate-950 px-1.5 py-0.5 rounded mt-1.5 inline-block">
+                            {p.category}
+                          </span>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <div>
+                            <div className="font-bold text-slate-200">{formatCurrency(p.amount)}</div>
+                            {p.status === "Paid" ? (
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-emerald-950/60 text-emerald-400 border-emerald-900/20 uppercase tracking-wider">
+                                Settled
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenPayout(p)}
+                                className="px-2.5 py-0.5 rounded-full text-[9px] font-bold mt-1.5 flex items-center gap-1 border bg-red-950/60 text-red-400 border-red-900/20 hover:bg-red-600 hover:text-white transition-all duration-200 cursor-pointer"
+                                title="Authorize IMPS Bank Transfer Payout"
+                              >
+                                <CreditCard size={10} /> Pay Bill
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Delete on hover */}
+                          <div className="flex items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+                            <button 
+                              onClick={() => handleDeletePayout(p.id)} 
+                              className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
+                              title="Delete Supplier Bill"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </div>
+                <div className="p-3 bg-slate-900/20 text-slate-500 text-[10px] text-center border-t border-slate-900">
+                  Supplier payouts debit from bank accounts, updating expenditures and profitability indexes.
+                </div>
+              </Card>
+            )}
           </div>
         </>
       )}
 
-      {/* ADD INVOICE OVERLAY MODAL */}
+      {/* ADD CLIENT INVOICE MODAL */}
       {isAddModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fadeIn">
           <div className="w-full max-w-md bg-slate-950 border border-white/10 rounded-3xl p-6 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-scaleUp">
             <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
               <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
-                <FileText size={16} className="text-blue-500" /> New Invoice Billing
+                <FileText size={16} className="text-blue-500" /> Create Client Invoice
               </h3>
-              <button 
-                onClick={() => setIsAddModalOpen(false)} 
-                className="text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X size={18} />
-              </button>
+              <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white cursor-pointer"><X size={18} /></button>
             </div>
 
             <form onSubmit={handleAddInvoice} className="space-y-4 text-xs">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-400">Client / Company Name</label>
                 <input
-                  type="text"
-                  required
-                  placeholder="e.g. Reliance Tech Solutions"
-                  value={newInvClient}
-                  onChange={(e) => setNewInvClient(e.target.value)}
+                  type="text" required placeholder="e.g. Reliance Tech Solutions"
+                  value={newInvClient} onChange={(e) => setNewInvClient(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">Client Contact Phone (for WhatsApp Share)</label>
+                <input
+                  type="text" placeholder="e.g. 9876543210"
+                  value={newInvPhone} onChange={(e) => setNewInvPhone(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -483,11 +675,8 @@ export default function FinancePage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-400">Billing Amount (in ₹)</label>
                 <input
-                  type="number"
-                  required
-                  min="0"
-                  value={newInvAmount}
-                  onChange={(e) => setNewInvAmount(Number(e.target.value))}
+                  type="number" required min="0"
+                  value={newInvAmount} onChange={(e) => setNewInvAmount(Number(e.target.value))}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -496,39 +685,27 @@ export default function FinancePage() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-400">Due Date</label>
                   <input
-                    type="date"
-                    required
-                    value={newInvDate}
-                    onChange={(e) => setNewInvDate(e.target.value)}
+                    type="date" required
+                    value={newInvDate} onChange={(e) => setNewInvDate(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-400">Billing Status</label>
                   <select
-                    value={newInvStatus}
-                    onChange={(e) => setNewInvStatus(e.target.value as any)}
+                    value={newInvStatus} onChange={(e) => setNewInvStatus(e.target.value as any)}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                   >
-                    <option value="Paid">Paid</option>
                     <option value="Pending">Pending</option>
+                    <option value="Paid">Paid</option>
                     <option value="Overdue">Overdue</option>
                   </select>
                 </div>
               </div>
 
               <div className="flex gap-3 justify-end pt-3.5 border-t border-white/5">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => setIsAddModalOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={submittingInvoice}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={submittingInvoice}>
                   {submittingInvoice ? <RefreshCw className="animate-spin" size={14} /> : "Save Invoice"}
                 </Button>
               </div>
@@ -537,30 +714,32 @@ export default function FinancePage() {
         </div>
       )}
 
-      {/* EDIT INVOICE OVERLAY MODAL */}
+      {/* EDIT CLIENT INVOICE MODAL */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fadeIn">
           <div className="w-full max-w-md bg-slate-950 border border-white/10 rounded-3xl p-6 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-scaleUp">
             <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
               <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
                 <FileText size={16} className="text-purple-500" /> Edit Invoice Billing
               </h3>
-              <button 
-                onClick={() => { setIsEditModalOpen(false); setSelectedInvoice(null); }} 
-                className="text-slate-400 hover:text-white cursor-pointer"
-              >
-                <X size={18} />
-              </button>
+              <button onClick={() => { setIsEditModalOpen(false); setSelectedInvoice(null); }} className="text-slate-400 hover:text-white cursor-pointer"><X size={18} /></button>
             </div>
 
             <form onSubmit={handleUpdateInvoice} className="space-y-4 text-xs">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-400">Client / Company Name</label>
+                <label className="text-xs font-semibold text-slate-400">Client Name</label>
+                <input
+                  type="text" required
+                  value={editInvClient} onChange={(e) => setEditInvClient(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">Client Contact Phone</label>
                 <input
                   type="text"
-                  required
-                  value={editInvClient}
-                  onChange={(e) => setEditInvClient(e.target.value)}
+                  value={editInvPhone} onChange={(e) => setEditInvPhone(e.target.value)}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -568,11 +747,8 @@ export default function FinancePage() {
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-slate-400">Billing Amount (in ₹)</label>
                 <input
-                  type="number"
-                  required
-                  min="0"
-                  value={editInvAmount}
-                  onChange={(e) => setEditInvAmount(Number(e.target.value))}
+                  type="number" required min="0"
+                  value={editInvAmount} onChange={(e) => setEditInvAmount(Number(e.target.value))}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -581,18 +757,15 @@ export default function FinancePage() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-400">Due Date</label>
                   <input
-                    type="date"
-                    required
-                    value={editInvDate}
-                    onChange={(e) => setEditInvDate(e.target.value)}
+                    type="date" required
+                    value={editInvDate} onChange={(e) => setEditInvDate(e.target.value)}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-semibold text-slate-400">Billing Status</label>
                   <select
-                    value={editInvStatus}
-                    onChange={(e) => setEditInvStatus(e.target.value as any)}
+                    value={editInvStatus} onChange={(e) => setEditInvStatus(e.target.value as any)}
                     className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
                   >
                     <option value="Paid">Paid</option>
@@ -603,21 +776,138 @@ export default function FinancePage() {
               </div>
 
               <div className="flex gap-3 justify-end pt-3.5 border-t border-white/5">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => { setIsEditModalOpen(false); setSelectedInvoice(null); }}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={updatingInvoice}
-                >
+                <Button type="button" variant="outline" onClick={() => { setIsEditModalOpen(false); setSelectedInvoice(null); }}>Cancel</Button>
+                <Button type="submit" disabled={updatingInvoice}>
                   {updatingInvoice ? <RefreshCw className="animate-spin" size={14} /> : "Save Changes"}
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* LOG SUPPLIER BILL MODAL */}
+      {isAddPayoutOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-md bg-slate-950 border border-white/10 rounded-3xl p-6 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-scaleUp">
+            <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                <FileText size={16} className="text-red-500" /> Log Outgoing Supplier Bill
+              </h3>
+              <button onClick={() => setIsAddPayoutOpen(false)} className="text-slate-400 hover:text-white cursor-pointer"><X size={18} /></button>
+            </div>
+
+            <form onSubmit={handleAddPayout} className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">Supplier / Vendor Name</label>
+                <input
+                  type="text" required placeholder="e.g. AWS Cloud, Intel Foundry, City Landlord"
+                  value={newPayVendor} onChange={(e) => setNewPayVendor(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400">Bill Category</label>
+                  <select
+                    value={newPayCategory} onChange={(e) => setNewPayCategory(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="Cloud Infrastructure">Cloud Infrastructure</option>
+                    <option value="Hardware Materials">Hardware Materials</option>
+                    <option value="Logistics & Freight">Logistics & Freight</option>
+                    <option value="Rent & Utilities">Rent & Utilities</option>
+                    <option value="Operating Supplies">Operating Supplies</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400">Supplier Bank Details</label>
+                  <input
+                    type="text" required placeholder="e.g. HDFC A/C 4531"
+                    value={newPayBankAccount} onChange={(e) => setNewPayBankAccount(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400">Amount (in ₹)</label>
+                  <input
+                    type="number" required min="0"
+                    value={newPayAmount} onChange={(e) => setNewPayAmount(Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400">Due Date</label>
+                  <input
+                    type="date" required
+                    value={newPayDueDate} onChange={(e) => setNewPayDueDate(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-3.5 border-t border-white/5">
+                <Button type="button" variant="outline" onClick={() => setIsAddPayoutOpen(false)}>Cancel</Button>
+                <Button type="submit" disabled={submittingPayout}>
+                  {submittingPayout ? <RefreshCw className="animate-spin" size={14} /> : "Log Bill"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* RAZORPAYX DIRECT BANK TRANSFER CONFIRMATION MODAL */}
+      {isPayoutConfirmOpen && selectedPayout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-sm bg-slate-950 border border-red-500/20 rounded-3xl p-6 space-y-5 shadow-[0_8px_32px_rgba(239,68,68,0.15)] animate-scaleUp">
+            
+            {/* Header */}
+            <div className="text-center border-b border-white/5 pb-3 space-y-1">
+              <div className="w-10 h-10 rounded-xl bg-red-950/50 text-red-400 border border-red-500/20 flex items-center justify-center font-extrabold text-md mx-auto mb-2">
+                1
+              </div>
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white">RazorpayX Payout</h3>
+              <p className="text-[10px] text-slate-500">Corporate Bank Transfer (Staging Simulator)</p>
+            </div>
+
+            {/* Transfer details */}
+            <div className="p-4 bg-slate-900/30 border border-slate-800 rounded-2xl text-xs space-y-2.5 font-semibold">
+              <div className="flex justify-between"><span className="text-slate-500">Beneficiary</span><span className="text-white">{selectedPayout.vendor}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Category</span><span className="text-slate-300">{selectedPayout.category}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Bank Destination</span><span className="text-slate-300 font-mono">{selectedPayout.bankAccount}</span></div>
+              <div className="flex justify-between"><span className="text-slate-500">Payout Amount</span><span className="text-red-400 font-bold">{formatCurrency(selectedPayout.amount)}</span></div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 justify-end pt-2">
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => { setIsPayoutConfirmOpen(false); setSelectedPayout(null); }}
+                disabled={processingPayout}
+                className="flex-1 text-xs"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleExecutePayout}
+                disabled={processingPayout}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs"
+              >
+                {processingPayout ? (
+                  <>
+                    <RefreshCw className="animate-spin mr-1" size={12} /> Transferring...
+                  </>
+                ) : (
+                  "Confirm IMPS"
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       )}
