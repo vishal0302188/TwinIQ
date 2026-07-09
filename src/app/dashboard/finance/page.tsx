@@ -106,6 +106,8 @@ export default function FinancePage() {
             setFinRecords(initialFinance);
           }
 
+          const isCleared = typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true";
+
           // Load Receivables (Client Invoices)
           const invSnapshot = await getDocs(collection(db, "invoices"));
           if (!invSnapshot.empty) {
@@ -115,7 +117,7 @@ export default function FinancePage() {
             });
             setInvoices(invData);
           } else {
-            setInvoices(initialInvoices);
+            setInvoices(isCleared ? [] : initialInvoices);
           }
 
           // Load Payables (Supplier Payouts)
@@ -127,7 +129,7 @@ export default function FinancePage() {
             });
             setPayouts(payData);
           } else {
-            setPayouts(initialPayouts);
+            setPayouts(isCleared ? [] : initialPayouts);
           }
           setLoading(false);
           return;
@@ -138,10 +140,16 @@ export default function FinancePage() {
       
       // Local fallbacks
       if (typeof window !== "undefined") {
-        const cachedInv = localStorage.getItem("twiniq_mock_invoices");
-        const cachedPay = localStorage.getItem("twiniq_mock_payouts");
-        setInvoices(cachedInv ? JSON.parse(cachedInv) : initialInvoices);
-        setPayouts(cachedPay ? JSON.parse(cachedPay) : initialPayouts);
+        const isCleared = localStorage.getItem("twiniq_clear_fallback") === "true";
+        if (isCleared) {
+          setInvoices([]);
+          setPayouts([]);
+        } else {
+          const cachedInv = localStorage.getItem("twiniq_mock_invoices");
+          const cachedPay = localStorage.getItem("twiniq_mock_payouts");
+          setInvoices(cachedInv ? JSON.parse(cachedInv) : initialInvoices);
+          setPayouts(cachedPay ? JSON.parse(cachedPay) : initialPayouts);
+        }
       } else {
         setInvoices(initialInvoices);
         setPayouts(initialPayouts);
