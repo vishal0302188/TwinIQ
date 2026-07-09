@@ -283,18 +283,58 @@ export default function FinancePage() {
   };
 
   // Delete Client Invoice
-  const handleDeleteInvoice = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this invoice?")) return;
+  const handleDeleteInvoice = async (invoiceItem: Invoice) => {
+    if (!confirm(`Are you sure you want to delete Invoice ${invoiceItem.id}?`)) return;
     try {
       if (db) {
-        await deleteDoc(doc(db, "invoices", id));
+        await deleteDoc(doc(db, "invoices", invoiceItem.id));
+        
+        // If the invoice was paid, deduct it from finance stats
+        if (invoiceItem.status === "Paid") {
+          const finSnap = await getDocs(collection(db, "finance"));
+          if (!finSnap.empty) {
+            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+            const latestData = latestDoc.data();
+            await setDoc(doc(db, "finance", latestDoc.id), {
+              ...latestData,
+              revenue: Math.max(0, Number(latestData.revenue || 0) - invoiceItem.amount),
+              profit: Math.max(0, Number(latestData.profit || 0) - Math.round(invoiceItem.amount * 0.31))
+            });
+          }
+        }
       }
-      const updatedList = invoices.filter(inv => inv.id !== id);
+      
+      const updatedList = invoices.filter(inv => inv.id !== invoiceItem.id);
       setInvoices(updatedList);
       syncLocalCache(updatedList, payouts);
-    } catch (err) {
+      
+      alert("Invoice deleted successfully.");
+      window.location.reload();
+    } catch (err: any) {
       console.error("Failed to delete invoice:", err);
-      alert("Failed to delete invoice: " + err);
+      alert("Failed to delete invoice from database:\n" + (err.message || err));
+    }
+  };
+
+  // Delete all client invoices
+  const handleDeleteAllInvoices = async () => {
+    if (!confirm("WARNING: Are you sure you want to delete ALL invoices from the database? This cannot be undone.")) return;
+    try {
+      if (db) {
+        const querySnapshot = await getDocs(collection(db, "invoices"));
+        for (const docSnap of querySnapshot.docs) {
+          await deleteDoc(doc(db, "invoices", docSnap.id));
+        }
+      }
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("twiniq_mock_invoices");
+      }
+      setInvoices([]);
+      alert("All client invoices deleted successfully!");
+      window.location.reload();
+    } catch (err: any) {
+      console.error("Failed to delete all invoices:", err);
+      alert("Failed to delete invoices from database:\n" + (err.message || err));
     }
   };
 
@@ -350,18 +390,58 @@ export default function FinancePage() {
   };
 
   // Delete Supplier Payout
-  const handleDeletePayout = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this bill?")) return;
+  const handleDeletePayout = async (payoutItem: Payout) => {
+    if (!confirm(`Are you sure you want to delete Bill ${payoutItem.id}?`)) return;
     try {
       if (db) {
-        await deleteDoc(doc(db, "payouts", id));
+        await deleteDoc(doc(db, "payouts", payoutItem.id));
+        
+        // If the bill was paid, reverse the expenses deduction from finance stats
+        if (payoutItem.status === "Paid") {
+          const finSnap = await getDocs(collection(db, "finance"));
+          if (!finSnap.empty) {
+            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+            const latestData = latestDoc.data();
+            await setDoc(doc(db, "finance", latestDoc.id), {
+              ...latestData,
+              expenses: Math.max(0, Number(latestData.expenses || 0) - payoutItem.amount),
+              profit: Number(latestData.profit || 0) + payoutItem.amount
+            });
+          }
+        }
       }
-      const updatedList = payouts.filter(p => p.id !== id);
+      
+      const updatedList = payouts.filter(p => p.id !== payoutItem.id);
       setPayouts(updatedList);
       syncLocalCache(invoices, updatedList);
-    } catch (err) {
+      
+      alert("Supplier bill record deleted successfully.");
+      window.location.reload();
+    } catch (err: any) {
       console.error("Failed to delete bill:", err);
-      alert("Failed to delete bill: " + err);
+      alert("Failed to delete bill from database:\n" + (err.message || err));
+    }
+  };
+
+  // Delete all supplier bills
+  const handleDeleteAllPayouts = async () => {
+    if (!confirm("WARNING: Are you sure you want to delete ALL supplier bills from the database? This cannot be undone.")) return;
+    try {
+      if (db) {
+        const querySnapshot = await getDocs(collection(db, "payouts"));
+        for (const docSnap of querySnapshot.docs) {
+          await deleteDoc(doc(db, "payouts", docSnap.id));
+        }
+      }
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("twiniq_mock_payouts");
+      }
+      setPayouts([]);
+      alert("All supplier bills deleted successfully!");
+      window.location.reload();
+    } catch (err: any) {
+      console.error("Failed to delete all bills:", err);
+      alert("Failed to delete bills from database:\n" + (err.message || err));
     }
   };
 
@@ -550,9 +630,21 @@ export default function FinancePage() {
                       <CardTitle className="text-md font-bold">Inbound Billing & Invoices</CardTitle>
                       <CardDescription className="text-xs">Client payment tracking ledgers.</CardDescription>
                     </div>
-                    <Button size="sm" variant="secondary" className="flex items-center gap-1 text-[10px] px-2.5 py-1" onClick={() => setIsAddModalOpen(true)}>
-                      <Plus size={12} /> New Invoice
-                    </Button>
+                    <div className="flex gap-2">
+                      {invoices.length > 0 && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex items-center gap-1 text-[10px] px-2.5 py-1 border-red-900/30 text-red-400 hover:bg-red-950/20 h-auto rounded-xl cursor-pointer" 
+                          onClick={handleDeleteAllInvoices}
+                        >
+                          Clear Invoices
+                        </Button>
+                      )}
+                      <Button size="sm" variant="secondary" className="flex items-center gap-1 text-[10px] px-2.5 py-1 h-auto rounded-xl cursor-pointer" onClick={() => setIsAddModalOpen(true)}>
+                        <Plus size={12} /> New Invoice
+                      </Button>
+                    </div>
                   </CardHeader>
 
                   <CardContent className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
@@ -602,7 +694,7 @@ export default function FinancePage() {
                               <Edit2 size={12} />
                             </button>
                             <button 
-                              onClick={() => handleDeleteInvoice(inv.id)} 
+                              onClick={() => handleDeleteInvoice(inv)} 
                               className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
                               title="Delete Invoice"
                             >
@@ -629,9 +721,21 @@ export default function FinancePage() {
                       <CardTitle className="text-md font-bold">Outbound Supplier Bills</CardTitle>
                       <CardDescription className="text-xs">Incoming invoices due to vendors.</CardDescription>
                     </div>
-                    <Button size="sm" variant="danger" className="flex items-center gap-1 text-[10px] px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-900/20" onClick={() => setIsAddPayoutOpen(true)}>
-                      <Plus size={12} /> Log Bill
-                    </Button>
+                    <div className="flex gap-2">
+                      {payouts.length > 0 && (
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex items-center gap-1 text-[10px] px-2.5 py-1 border-red-900/30 text-red-400 hover:bg-red-950/20 h-auto rounded-xl cursor-pointer" 
+                          onClick={handleDeleteAllPayouts}
+                        >
+                          Clear Bills
+                        </Button>
+                      )}
+                      <Button size="sm" variant="danger" className="flex items-center gap-1 text-[10px] px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-900/20 h-auto rounded-xl cursor-pointer" onClick={() => setIsAddPayoutOpen(true)}>
+                        <Plus size={12} /> Log Bill
+                      </Button>
+                    </div>
                   </CardHeader>
 
                   <CardContent className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
@@ -665,7 +769,7 @@ export default function FinancePage() {
                           {/* Delete on hover */}
                           <div className="flex items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
                             <button 
-                              onClick={() => handleDeletePayout(p.id)} 
+                              onClick={() => handleDeletePayout(p)} 
                               className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
                               title="Delete Supplier Bill"
                             >

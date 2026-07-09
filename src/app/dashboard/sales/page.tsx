@@ -172,16 +172,47 @@ export default function SalesPage() {
         }
       }
 
+      // Cleanup local cache if present
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("twiniq_mock_sales");
+        if (cached) {
+          const cachedList = JSON.parse(cached) as Sale[];
+          const updatedCached = cachedList.filter(s => s.id !== saleItem.id);
+          localStorage.setItem("twiniq_mock_sales", JSON.stringify(updatedCached));
+        }
+      }
+
       const updatedList = sales.filter(s => s.id !== saleItem.id);
       setSales(updatedList);
       syncCache(updatedList);
 
-      if (saleItem.status === "Success") {
-        window.location.reload();
-      }
-    } catch (err) {
+      alert("Sales record deleted successfully.");
+      window.location.reload();
+    } catch (err: any) {
       console.error("Failed to delete sale:", err);
-      alert("Failed to delete record: " + err);
+      alert("Failed to delete sale from database:\n" + (err.message || err));
+    }
+  };
+
+  // Delete all sales logs
+  const handleDeleteAllSales = async () => {
+    if (!confirm("WARNING: Are you sure you want to delete ALL sales logs from the database? This cannot be undone.")) return;
+    try {
+      if (db) {
+        const querySnapshot = await getDocs(collection(db, "sales"));
+        for (const docSnap of querySnapshot.docs) {
+          await deleteDoc(doc(db, "sales", docSnap.id));
+        }
+      }
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("twiniq_mock_sales");
+      }
+      setSales([]);
+      alert("All sales log overrides deleted successfully!");
+      window.location.reload();
+    } catch (err: any) {
+      console.error("Failed to delete all sales logs:", err);
+      alert("Failed to delete sales logs from database:\n" + (err.message || err));
     }
   };
 
@@ -306,13 +337,24 @@ export default function SalesPage() {
                 <CardTitle className="text-md font-bold">Transaction Journal</CardTitle>
                 <CardDescription className="text-xs">Audited list of manual overrides and sales logs.</CardDescription>
               </div>
-              <div className="relative max-w-xs w-full">
-                <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
-                <input
-                  type="text" placeholder="Search customer, item..."
-                  value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-slate-900/60 border border-slate-800 rounded-full pl-8 pr-4 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
-                />
+              <div className="flex items-center gap-3 max-w-md w-full justify-end">
+                {sales.length > 0 && (
+                  <Button
+                    onClick={handleDeleteAllSales}
+                    variant="outline"
+                    className="border-red-900/30 text-red-400 hover:bg-red-950/20 text-[10px] px-3 py-1.5 h-auto rounded-xl shrink-0 cursor-pointer"
+                  >
+                    Clear All Logs
+                  </Button>
+                )}
+                <div className="relative max-w-xs w-full">
+                  <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
+                  <input
+                    type="text" placeholder="Search customer, item..."
+                    value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full bg-slate-900/60 border border-slate-800 rounded-full pl-8 pr-4 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
               </div>
             </CardHeader>
 
