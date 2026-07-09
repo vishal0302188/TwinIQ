@@ -93,6 +93,7 @@ export default function FinancePage() {
     async function loadFinance() {
       try {
         if (db) {
+          const isCleared = typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true";
           const querySnapshot = await getDocs(collection(db, "finance"));
           if (!querySnapshot.empty) {
             const data: FinanceRecord[] = [];
@@ -103,10 +104,8 @@ export default function FinancePage() {
             data.sort((a, b) => monthsOrder.indexOf(a.month) - monthsOrder.indexOf(b.month));
             setFinRecords(data);
           } else {
-            setFinRecords(initialFinance);
+            setFinRecords(isCleared ? [] : initialFinance);
           }
-
-          const isCleared = typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true";
 
           // Load Receivables (Client Invoices)
           const invSnapshot = await getDocs(collection(db, "invoices"));
@@ -144,17 +143,19 @@ export default function FinancePage() {
         if (isCleared) {
           setInvoices([]);
           setPayouts([]);
+          setFinRecords([]);
         } else {
           const cachedInv = localStorage.getItem("twiniq_mock_invoices");
           const cachedPay = localStorage.getItem("twiniq_mock_payouts");
           setInvoices(cachedInv ? JSON.parse(cachedInv) : initialInvoices);
           setPayouts(cachedPay ? JSON.parse(cachedPay) : initialPayouts);
+          setFinRecords(initialFinance);
         }
       } else {
         setInvoices(initialInvoices);
         setPayouts(initialPayouts);
+        setFinRecords(initialFinance);
       }
-      setFinRecords(initialFinance);
       setLoading(false);
     }
     loadFinance();
