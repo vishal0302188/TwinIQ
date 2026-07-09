@@ -110,58 +110,63 @@ export default function MainDashboard() {
       
       // Calculate dynamic inventory health
       const lowStockCount = dbInventory.filter(item => item.status !== "In Stock").length;
-      const invHealthVal = dbInventory.length > 0 ? Math.round(100 - (lowStockCount / dbInventory.length) * 100) : 100;
+      const invHealthVal = isCleared ? 0 : (dbInventory.length > 0 ? Math.round(100 - (lowStockCount / dbInventory.length) * 100) : 100);
 
       // Calculate dynamic customer satisfaction
       const avgChurn = dbCustomers.length > 0 ? dbCustomers.reduce((sum, c) => sum + c.churnRisk, 0) / dbCustomers.length : 0;
-      const custSatVal = dbCustomers.length > 0 ? (100 - (avgChurn * 0.4)).toFixed(1) : "100.0";
+      const custSatVal = isCleared ? "0.0" : (dbCustomers.length > 0 ? (100 - (avgChurn * 0.4)).toFixed(1) : "100.0");
 
       // Calculate dynamic employee metrics
-      const avgProd = dbEmployees.length > 0 ? dbEmployees.reduce((sum, e) => sum + e.productivity, 0) / dbEmployees.length : 0;
+      const avgProd = isCleared ? 0 : (dbEmployees.length > 0 ? dbEmployees.reduce((sum, e) => sum + e.productivity, 0) / dbEmployees.length : 0);
+
+      // Dynamic scores (revert to 0 if cleared)
+      const revScore = isCleared ? 0 : (currentFin.revenue > 0 ? Math.min(100, Math.round((currentFin.revenue / 12400000) * 92)) : 92);
+      const profitScore = isCleared ? 0 : (currentFin.profit > 0 ? Math.min(100, Math.round((currentFin.profit / 3850000) * 87)) : 87);
+      const cashScore = isCleared ? 0 : (currentFin.cashFlow > 0 ? Math.min(100, Math.round((currentFin.cashFlow / 5000000) * 90)) : 90);
 
       const terms = getBusinessTerms();
       const updatedKpis: KPI[] = [
         { 
           name: "Revenue", 
           value: formatCurrency(currentFin.revenue), 
-          score: 92, 
-          change: "+14.2% vs last month", 
-          isPositive: true 
+          score: revScore, 
+          change: isCleared ? "0.0% growth" : "+14.2% vs last month", 
+          isPositive: !isCleared 
         },
         { 
           name: "Profit", 
           value: formatCurrency(currentFin.profit), 
-          score: 87, 
-          change: "+8.4% vs last month", 
-          isPositive: true 
+          score: profitScore, 
+          change: isCleared ? "0.0% margin" : "+8.4% vs last month", 
+          isPositive: !isCleared 
         },
         { 
           name: "Cash Flow", 
           value: formatCurrency(currentFin.cashFlow), 
-          score: 90, 
-          change: "+11.5% vs last month", 
-          isPositive: true 
+          score: cashScore, 
+          change: isCleared ? "0.0% net flow" : "+11.5% vs last month", 
+          isPositive: !isCleared 
         },
         { 
           name: `${terms.inventoryLbl} Health`, 
           value: `${invHealthVal}%`, 
           score: invHealthVal, 
-          change: lowStockCount > 0 ? `-${(lowStockCount * 2.1).toFixed(1)}% low stock risk` : "Optimal safety margins", 
-          isPositive: lowStockCount === 0 
+          change: isCleared ? "No inventory items" : (lowStockCount > 0 ? `-${(lowStockCount * 2.1).toFixed(1)}% low stock risk` : "Optimal safety margins"), 
+          isPositive: !isCleared && lowStockCount === 0 
         },
         { 
           name: `${terms.clientSing} Satisfaction`, 
           value: `${custSatVal}%`, 
           score: Math.round(Number(custSatVal)), 
-          change: "+0.8% support rating", 
-          isPositive: true 
+          change: isCleared ? "No support data" : "+0.8% support rating", 
+          isPositive: !isCleared 
         },
         { 
           name: `${terms.staffLbl} Productivity`, 
           value: `${avgProd.toFixed(1)}%`, 
           score: Math.round(avgProd), 
-          change: "+3.1% milestone completions", 
-          isPositive: true 
+          change: isCleared ? "No staff tracked" : "+3.1% milestone completions", 
+          isPositive: !isCleared 
         }
       ];
 
@@ -171,8 +176,24 @@ export default function MainDashboard() {
       const healthScore = Math.round(updatedKpis.reduce((sum, k) => sum + k.score, 0) / 6);
       setBusinessHealth(healthScore);
 
-      setEvents(initialEvents);
-      setIntelligence(mockIntelligence);
+      setEvents(isCleared ? [
+        {
+          id: "ev-empty",
+          time: "Now",
+          title: "Database Ready",
+          description: "Your digital twin workspace is clean. Feed data via Settings or log sales overrides to begin.",
+          category: "finance",
+          severity: "info"
+        }
+      ] : initialEvents);
+
+      setIntelligence(isCleared ? [
+        {
+          id: "i-empty",
+          text: "🚀 TwinIQ Sandbox is active. Populate datasets in settings or upload a CSV ledger file to start telemetry maps.",
+          type: "info"
+        }
+      ] : mockIntelligence);
       setLoading(false);
     } catch (err) {
       console.error("Dashboard computation error, using local mock data fallback:", err);

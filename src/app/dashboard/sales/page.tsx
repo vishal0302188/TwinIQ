@@ -97,6 +97,10 @@ export default function SalesPage() {
     if (!customer || !item || !date) return;
     setSubmitting(true);
 
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("twiniq_clear_fallback");
+    }
+
     const generatedId = `sale-${Math.floor(800 + Math.random() * 200)}`;
     const newSale: Sale = {
       id: generatedId,

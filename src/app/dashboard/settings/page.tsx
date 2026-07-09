@@ -345,6 +345,7 @@ export default function SettingsPage() {
 
           // 2. Write to LocalStorage (Always active for client stability)
           if (typeof window !== "undefined") {
+            localStorage.removeItem("twiniq_clear_fallback");
             const currentExtraRev = Number(localStorage.getItem("twiniq_extra_revenue") || 0);
             localStorage.setItem("twiniq_extra_revenue", String(currentExtraRev + totalCsvRev));
             

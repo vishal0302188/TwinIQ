@@ -189,6 +189,9 @@ export default function FinancePage() {
     };
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("twiniq_clear_fallback");
+      }
       if (db) {
         await setDoc(doc(db, "invoices", generatedId), newInvoice);
         if (finalStatus === "Paid") {
@@ -377,6 +380,9 @@ export default function FinancePage() {
     };
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("twiniq_clear_fallback");
+      }
       if (db) {
         await setDoc(doc(db, "payouts", generatedId), newPayout);
       }
