@@ -250,10 +250,30 @@ export default function SettingsPage() {
         for (const d of invoiceSnap.docs) {
           await deleteDoc(doc(db, "invoices", d.id));
         }
+
+        // Clear payouts
+        const payoutSnap = await getDocs(collection(db, "payouts"));
+        for (const d of payoutSnap.docs) {
+          await deleteDoc(doc(db, "payouts", d.id));
+        }
+
+        // Clear sales logs
+        const salesSnap = await getDocs(collection(db, "sales"));
+        for (const d of salesSnap.docs) {
+          await deleteDoc(doc(db, "sales", d.id));
+        }
       }
 
       // Suppress mock data loading locally
       localStorage.setItem("twiniq_clear_fallback", "true");
+      localStorage.setItem("twiniq_mock_invoices", "[]");
+      localStorage.setItem("twiniq_mock_payouts", "[]");
+      localStorage.setItem("twiniq_mock_sales", "[]");
+      localStorage.removeItem("twiniq_invoices_cleared");
+      localStorage.removeItem("twiniq_bills_cleared");
+      localStorage.removeItem("twiniq_sales_cleared");
+      localStorage.removeItem("twiniq_extra_revenue");
+      
       setSeeded(false);
       alert("All twin database collections and local caches cleared successfully!");
       window.location.reload();
