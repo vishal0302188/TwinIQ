@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { 
   Users, UserPlus, ShieldAlert, CheckCircle, ArrowUpRight,
-  ShoppingBag, Calendar, Activity, Star, RefreshCw, X, Trash2, Edit2
+  ShoppingBag, Calendar, Activity, Star, RefreshCw, X, Trash2, Edit2,
+  FileText, Plus, Send, CreditCard
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,23 @@ import { initialCustomers, Customer, getMockData } from "@/lib/mockData";
 import { formatCurrency, getBusinessTerms } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
+
+interface Invoice {
+  id: string;
+  client: string;
+  amount: number;
+  status: "Paid" | "Pending" | "Overdue";
+  date: string;
+  phone?: string;
+  paymentMethod?: "online" | "cash";
+}
+
+const initialInvoices: Invoice[] = [
+  { id: "inv-2041", client: "MalhotraTech Corp", amount: 150000, status: "Paid", date: "2026-06-15", phone: "9876543210" },
+  { id: "inv-2042", client: "Stellar Brands", amount: 420000, status: "Overdue", date: "2026-05-18", phone: "9123456780" },
+  { id: "inv-2043", client: "Apex Ventures", amount: 120000, status: "Paid", date: "2026-06-01", phone: "9988776655" },
+  { id: "inv-2044", client: "Nimbus Education", amount: 80000, status: "Pending", date: "2026-06-25", phone: "8877665544" }
+];
 
 export default function CustomersPage() {
   const terms = getBusinessTerms();
@@ -37,8 +55,58 @@ export default function CustomersPage() {
   const [updatingCust, setUpdatingCust] = useState(false);
   const [deletingCust, setDeletingCust] = useState(false);
 
+  // Client Invoices state
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  
+  // Add Invoice Modal states
+  const [isAddInvoiceOpen, setIsAddInvoiceOpen] = useState(false);
+  const [newInvAmount, setNewInvAmount] = useState(75000);
+  const [newInvStatus, setNewInvStatus] = useState<"Paid" | "Pending" | "Overdue">("Pending");
+  const [newInvDate, setNewInvDate] = useState("");
+  const [newInvPhone, setNewInvPhone] = useState("");
+  const [newInvPaymentMethod, setNewInvPaymentMethod] = useState<"online" | "cash">("online");
+  const [submittingInvoice, setSubmittingInvoice] = useState(false);
+
   useEffect(() => {
-    async function loadCustomers() {
+    async function loadData() {
+      // 1. Load Invoices
+      try {
+        if (db) {
+          const isCleared = typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true";
+          const isInvsCleared = typeof window !== "undefined" && localStorage.getItem("twiniq_invoices_cleared") === "true";
+
+          const invSnapshot = await getDocs(collection(db, "invoices"));
+          if (!invSnapshot.empty) {
+            const invData: Invoice[] = [];
+            invSnapshot.forEach((docSnap) => {
+              invData.push(docSnap.data() as Invoice);
+            });
+            setInvoices(invData);
+          } else {
+            setInvoices((isCleared || isInvsCleared) ? [] : initialInvoices);
+          }
+        }
+      } catch (err) {
+        console.error("Firestore invoices fetch error:", err);
+      }
+
+      // Local storage fallback for invoices
+      if (typeof window !== "undefined") {
+        const isCleared = localStorage.getItem("twiniq_clear_fallback") === "true";
+        const isInvsCleared = localStorage.getItem("twiniq_invoices_cleared") === "true";
+        if (isCleared || isInvsCleared) {
+          setInvoices([]);
+        } else {
+          const cachedInv = localStorage.getItem("twiniq_mock_invoices");
+          if (cachedInv) {
+            setInvoices(JSON.parse(cachedInv));
+          } else if (!db) {
+            setInvoices(initialInvoices);
+          }
+        }
+      }
+
+      // 2. Load Customers
       try {
         if (db) {
           const querySnapshot = await getDocs(collection(db, "customers"));
@@ -67,7 +135,7 @@ export default function CustomersPage() {
       }
       setLoading(false);
     }
-    loadCustomers();
+    loadData();
   }, []);
 
   // Sync edit states when selectedCust changes
@@ -174,6 +242,120 @@ export default function CustomersPage() {
     } finally {
       setDeletingCust(false);
     }
+  };
+
+  // Add Client Invoice
+  const handleAddInvoice = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedCust) return;
+    setSubmittingInvoice(true);
+
+    const generatedId = `inv-${Math.floor(1000 + Math.random() * 9000)}`;
+    const isCash = newInvPaymentMethod === "cash";
+    const finalStatus = isCash ? "Paid" : newInvStatus;
+    const clientPhone = newInvPhone || "9876543210";
+    
+    const newInvoice: Invoice = {
+      id: generatedId,
+      client: selectedCust.name,
+      amount: Number(newInvAmount),
+      status: finalStatus,
+      date: newInvDate,
+      phone: clientPhone,
+      paymentMethod: newInvPaymentMethod
+    };
+
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("twiniq_clear_fallback");
+        localStorage.removeItem("twiniq_invoices_cleared");
+      }
+      if (db) {
+        await setDoc(doc(db, "invoices", generatedId), newInvoice);
+        if (finalStatus === "Paid") {
+          const finSnap = await getDocs(collection(db, "finance"));
+          if (!finSnap.empty) {
+            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+            const latestData = latestDoc.data();
+            await setDoc(doc(db, "finance", latestDoc.id), {
+              ...latestData,
+              revenue: Number(latestData.revenue || 0) + newInvoice.amount,
+              profit: Number(latestData.profit || 0) + Math.round(newInvoice.amount * 0.31)
+            });
+          }
+        }
+      }
+      const updatedList = [newInvoice, ...invoices];
+      setInvoices(updatedList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_invoices", JSON.stringify(updatedList));
+      }
+      
+      setNewInvAmount(75000);
+      setNewInvStatus("Pending");
+      setNewInvDate("");
+      setNewInvPhone("");
+      setNewInvPaymentMethod("online");
+      setIsAddInvoiceOpen(false);
+      
+      alert(`Invoice ${generatedId} created successfully for ${selectedCust.name}!`);
+      if (finalStatus === "Paid") {
+        window.location.reload();
+      }
+    } catch (err: any) {
+      console.error("Failed to save new invoice:", err);
+      alert("Failed to save invoice: " + err.message);
+    } finally {
+      setSubmittingInvoice(false);
+    }
+  };
+
+  // Delete Client Invoice
+  const handleDeleteInvoice = async (invoiceItem: Invoice) => {
+    if (!confirm(`Are you sure you want to delete Invoice ${invoiceItem.id}?`)) return;
+    try {
+      if (db) {
+        await deleteDoc(doc(db, "invoices", invoiceItem.id));
+        
+        // If the invoice was paid, deduct it from finance stats
+        if (invoiceItem.status === "Paid") {
+          const finSnap = await getDocs(collection(db, "finance"));
+          if (!finSnap.empty) {
+            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+            const latestData = latestDoc.data();
+            await setDoc(doc(db, "finance", latestDoc.id), {
+              ...latestData,
+              revenue: Math.max(0, Number(latestData.revenue || 0) - invoiceItem.amount),
+              profit: Math.max(0, Number(latestData.profit || 0) - Math.round(invoiceItem.amount * 0.31))
+            });
+          }
+        }
+      }
+      
+      const updatedList = invoices.filter(inv => inv.id !== invoiceItem.id);
+      setInvoices(updatedList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_invoices", JSON.stringify(updatedList));
+      }
+      
+      alert("Invoice deleted successfully.");
+      window.location.reload();
+    } catch (err: any) {
+      console.error("Failed to delete invoice:", err);
+      alert("Failed to delete invoice from database:\n" + (err.message || err));
+    }
+  };
+
+  // Share to WhatsApp generator
+  const triggerWhatsAppShare = (inv: Invoice) => {
+    if (typeof window === "undefined") return;
+    const clientPhone = inv.phone || "9876543210";
+    const paymentUrl = `${window.location.origin}/pay?id=${inv.id}`;
+    const cleanText = `Dear ${inv.client}, your invoice ${inv.id} for ${formatCurrency(inv.amount)} from TwinIQ Platform is pending. Please review details and pay securely here: ${paymentUrl}`;
+    
+    // Create WhatsApp Web/Mobile redirect URL
+    const waUrl = `https://api.whatsapp.com/send?phone=${clientPhone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(cleanText)}`;
+    window.open(waUrl, "_blank");
   };
 
   return (
@@ -437,6 +619,80 @@ export default function CustomersPage() {
                     </div>
                   </div>
 
+                  {/* INVOICES SECTION */}
+                  <div className="p-6 border-t border-white/5 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <FileText size={14} className="text-blue-500" /> Inbound Invoices
+                      </h4>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setNewInvPhone("9876543210");
+                          setIsAddInvoiceOpen(true);
+                        }}
+                        className="text-[10px] px-2.5 py-1 flex items-center gap-1 h-auto rounded-xl cursor-pointer"
+                      >
+                        <Plus size={10} /> Create Invoice
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                      {invoices.filter(inv => inv.client.toLowerCase() === selectedCust.name.toLowerCase()).length === 0 ? (
+                        <div className="p-4 bg-slate-900/30 border border-slate-900 rounded-xl text-center text-slate-500 text-[10px] font-medium">
+                          No invoices generated for this client yet.
+                        </div>
+                      ) : (
+                        invoices
+                          .filter(inv => inv.client.toLowerCase() === selectedCust.name.toLowerCase())
+                          .map((inv) => (
+                            <div key={inv.id} className="p-3 bg-slate-900/50 border border-slate-800 rounded-xl flex justify-between items-center text-xs group relative hover:border-slate-700/80 transition-all duration-200">
+                              <div>
+                                <span className="text-[9px] font-bold text-slate-500 font-mono">{inv.id}</span>
+                                <div className="font-bold text-white mt-0.5">{inv.client}</div>
+                                <div className="text-[9px] text-slate-500 flex items-center gap-1 mt-1">
+                                  <Calendar size={10} /> Due: {inv.date}
+                                </div>
+                              </div>
+                              <div className="text-right flex items-center gap-3">
+                                <div>
+                                  <div className="font-bold text-slate-200">{formatCurrency(inv.amount)}</div>
+                                  <span className={`px-1.5 py-0.5 rounded-full text-[8px] font-bold mt-1 inline-block border uppercase tracking-wider ${
+                                    inv.status === "Paid"
+                                      ? "bg-emerald-950/60 text-emerald-400 border-emerald-900/20"
+                                      : inv.status === "Overdue"
+                                      ? "bg-red-950/60 text-red-400 border-red-900/20"
+                                      : "bg-amber-950/60 text-amber-400 border-amber-900/20"
+                                  }`}>
+                                    {inv.status}
+                                  </span>
+                                </div>
+                                <div className="flex gap-1 items-center">
+                                  {inv.status !== "Paid" && (
+                                    <button
+                                      onClick={() => triggerWhatsAppShare(inv)}
+                                      className="text-emerald-400 hover:text-emerald-300 p-1.5 rounded bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/20 cursor-pointer flex items-center gap-1"
+                                      title="Share via WhatsApp"
+                                    >
+                                      <Send size={11} /> <span className="text-[8px] font-bold">Share</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleDeleteInvoice(inv)}
+                                    className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
+                                    title="Delete Invoice"
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  </div>
+
                   {/* Action Recommendation footer */}
                   <div className="p-6 border-t border-white/5 bg-slate-900/20 text-xs">
                     {selectedCust.churnRisk > 70 ? (
@@ -562,6 +818,119 @@ export default function CustomersPage() {
                   disabled={submittingCust}
                 >
                   {submittingCust ? <RefreshCw className="animate-spin" size={14} /> : "Save Customer"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD INVOICE OVERLAY MODAL */}
+      {isAddInvoiceOpen && selectedCust && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-slate-950 border border-white/10 rounded-3xl p-6 space-y-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-scaleUp">
+            <div className="flex justify-between items-center border-b border-white/5 pb-2.5">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-white flex items-center gap-1.5">
+                <FileText size={16} className="text-blue-500" /> Create Client Invoice
+              </h3>
+              <button 
+                onClick={() => setIsAddInvoiceOpen(false)} 
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddInvoice} className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">Customer</label>
+                <input
+                  type="text"
+                  disabled
+                  value={selectedCust.name}
+                  className="w-full bg-slate-900/50 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-400 focus:outline-none cursor-not-allowed"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-400">Invoice Value (₹)</label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={newInvAmount}
+                  onChange={(e) => setNewInvAmount(Number(e.target.value))}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400">Payment Route</label>
+                  <select
+                    value={newInvPaymentMethod}
+                    onChange={(e) => setNewInvPaymentMethod(e.target.value as "online" | "cash")}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="online">💳 Online UPI/Bank</option>
+                    <option value="cash">💵 Cash Settlement</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-slate-400">Due Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={newInvDate}
+                    onChange={(e) => setNewInvDate(e.target.value)}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              {newInvPaymentMethod === "online" && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400">Billing Status</label>
+                    <select
+                      value={newInvStatus}
+                      onChange={(e) => setNewInvStatus(e.target.value as "Paid" | "Pending" | "Overdue")}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="Pending">Pending Approval</option>
+                      <option value="Paid">Mark as Paid</option>
+                      <option value="Overdue">Overdue Breach</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-400">Client WhatsApp Phone</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. 9876543210"
+                      value={newInvPhone}
+                      onChange={(e) => setNewInvPhone(e.target.value)}
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-3 justify-end pt-3.5 border-t border-white/5">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setIsAddInvoiceOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={submittingInvoice}
+                >
+                  {submittingInvoice ? <RefreshCw className="animate-spin" size={14} /> : "Create Invoice"}
                 </Button>
               </div>
             </form>

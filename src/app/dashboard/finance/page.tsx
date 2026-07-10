@@ -545,29 +545,6 @@ export default function FinancePage() {
           </p>
         </div>
 
-        {/* Tab selector */}
-        <div className="flex gap-2 bg-slate-900/60 p-1.5 rounded-2xl border border-white/5 w-fit shrink-0">
-          <button
-            onClick={() => setActiveTab("receivables")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === "receivables"
-                ? "bg-blue-600/20 text-blue-400 border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <ArrowDownRight size={14} /> Inbound (Receivables)
-          </button>
-          <button
-            onClick={() => setActiveTab("payables")}
-            className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all cursor-pointer ${
-              activeTab === "payables"
-                ? "bg-red-600/20 text-red-400 border border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]"
-                : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <ArrowUpRight size={14} /> Outbound (Payables)
-          </button>
-        </div>
       </div>
 
       {loading ? (
@@ -610,19 +587,13 @@ export default function FinancePage() {
             </Card>
 
             <Card className="border-white/5 p-4 flex flex-col justify-between min-h-[110px]">
-              {activeTab === "receivables" ? (
-                <div>
-                  <span className="text-[10px] text-amber-500 block uppercase font-bold tracking-wider">Outstanding Receivables</span>
-                  <span className="text-2xl font-extrabold text-amber-400 mt-1.5 block">{formatCurrency(outstandingReceivables)}</span>
-                  <span className="text-[10px] text-slate-500 block mt-2 font-semibold">From client invoices</span>
-                </div>
-              ) : (
-                <div>
-                  <span className="text-[10px] text-rose-500 block uppercase font-bold tracking-wider">Outstanding Payables</span>
-                  <span className="text-2xl font-extrabold text-rose-400 mt-1.5 block">{formatCurrency(outstandingPayables)}</span>
-                  <span className="text-[10px] text-slate-500 block mt-2 font-semibold">Due to suppliers</span>
-                </div>
-              )}
+              <div>
+                <span className="text-[10px] text-rose-500 block uppercase font-bold tracking-wider">Outstanding Payables</span>
+                <span className="text-2xl font-extrabold text-rose-400 mt-1.5 block">{formatCurrency(outstandingPayables)}</span>
+              </div>
+              <span className="text-[10px] text-slate-500 font-semibold mt-2">
+                Receivables: {formatCurrency(outstandingReceivables)}
+              </span>
             </Card>
           </div>
 
@@ -652,171 +623,78 @@ export default function FinancePage() {
               </CardContent>
             </Card>
 
-            {/* TAB 1: CLIENT INVOICES (RECEIVABLES) */}
-            {activeTab === "receivables" && (
-              <Card className="lg:col-span-5 border-white/5 flex flex-col justify-between animate-fadeIn">
-                <div>
-                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle className="text-md font-bold">Inbound Billing & Invoices</CardTitle>
-                      <CardDescription className="text-xs">Client payment tracking ledgers.</CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                      {invoices.length > 0 && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex items-center gap-1 text-[10px] px-2.5 py-1 border-red-900/30 text-red-400 hover:bg-red-950/20 h-auto rounded-xl cursor-pointer" 
-                          onClick={handleDeleteAllInvoices}
-                        >
-                          Clear Invoices
-                        </Button>
-                      )}
-                      <Button size="sm" variant="secondary" className="flex items-center gap-1 text-[10px] px-2.5 py-1 h-auto rounded-xl cursor-pointer" onClick={() => setIsAddModalOpen(true)}>
-                        <Plus size={12} /> New Invoice
+            {/* OUTBOUND SUPPLIER PAYOUTS (PAYABLES) */}
+            <Card className="lg:col-span-5 border-white/5 flex flex-col justify-between animate-fadeIn">
+              <div>
+                <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-md font-bold">Outbound Supplier Bills</CardTitle>
+                    <CardDescription className="text-xs">Incoming invoices due to vendors.</CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    {payouts.length > 0 && (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="flex items-center gap-1 text-[10px] px-2.5 py-1 border-red-900/30 text-red-400 hover:bg-red-950/20 h-auto rounded-xl cursor-pointer" 
+                        onClick={handleDeleteAllPayouts}
+                      >
+                        Clear Bills
                       </Button>
-                    </div>
-                  </CardHeader>
+                    )}
+                    <Button size="sm" variant="danger" className="flex items-center gap-1 text-[10px] px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-900/20 h-auto rounded-xl cursor-pointer" onClick={() => setIsAddPayoutOpen(true)}>
+                      <Plus size={12} /> Log Bill
+                    </Button>
+                  </div>
+                </CardHeader>
 
-                  <CardContent className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
-                    {invoices.map((inv) => (
-                      <div key={inv.id} className="p-3 bg-slate-900/50 border border-slate-800 rounded-xl flex justify-between items-center text-xs group relative hover:border-slate-700/80 transition-all duration-200">
+                <CardContent className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
+                  {payouts.map((p) => (
+                    <div key={p.id} className="p-3 bg-slate-900/50 border border-slate-800 rounded-xl flex justify-between items-center text-xs group relative hover:border-slate-700/80 transition-all duration-200">
+                      <div>
+                        <span className="text-[10px] font-bold text-rose-500/70">{p.id}</span>
+                        <h5 className="font-bold text-white mt-0.5">{p.vendor}</h5>
+                        <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold bg-slate-950 px-1.5 py-0.5 rounded mt-1.5 inline-block">
+                          {p.category}
+                        </span>
+                      </div>
+                      <div className="text-right flex items-center gap-3">
                         <div>
-                          <span className="text-[10px] font-bold text-slate-500">{inv.id}</span>
-                          <h5 className="font-bold text-white mt-0.5">{inv.client}</h5>
-                          <span className="text-[10px] text-slate-500 flex items-center gap-1.5 mt-1">
-                            <Calendar size={10} /> Due: {inv.date}
-                          </span>
+                          <div className="font-bold text-slate-200">{formatCurrency(p.amount)}</div>
+                          {p.status === "Paid" ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-emerald-950/60 text-emerald-400 border-emerald-900/20 uppercase tracking-wider">
+                              Settled
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenPayout(p)}
+                              className="px-2.5 py-0.5 rounded-full text-[9px] font-bold mt-1.5 flex items-center gap-1 border bg-red-950/60 text-red-400 border-red-900/20 hover:bg-red-600 hover:text-white transition-all duration-200 cursor-pointer"
+                              title="Authorize IMPS Bank Transfer Payout"
+                            >
+                              <CreditCard size={10} /> Pay Bill
+                            </button>
+                          )}
                         </div>
-                        <div className="text-right flex items-center gap-3">
-                          <div>
-                            <div className="font-bold text-slate-200">{formatCurrency(inv.amount)}</div>
-                            {inv.status === "Paid" ? (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-emerald-950/60 text-emerald-400 border-emerald-900/20 uppercase tracking-wider">
-                                {inv.paymentMethod === "cash" ? "💵 Cash" : "💳 Paid"}
-                              </span>
-                            ) : inv.status === "Overdue" ? (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-red-950/60 text-red-400 border-red-900/20 uppercase tracking-wider">
-                                Overdue
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-amber-950/60 text-amber-400 border-amber-900/20 uppercase tracking-wider">
-                                Pending
-                              </span>
-                            )}
-                          </div>
 
-                          {/* Action Overlay */}
-                          <div className="flex gap-1.5 items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
-                            {inv.status !== "Paid" && inv.paymentMethod !== "cash" && (
-                              <button 
-                                onClick={() => triggerWhatsAppShare(inv)} 
-                                className="text-emerald-400 hover:text-emerald-300 p-1.5 rounded bg-emerald-950/30 hover:bg-emerald-900/40 border border-emerald-500/20 cursor-pointer flex items-center gap-1"
-                                title="Share Payment Link via WhatsApp"
-                              >
-                                <Send size={11} /> <span className="text-[8px] font-bold">Share</span>
-                              </button>
-                            )}
-                            <button 
-                              onClick={() => handleOpenEdit(inv)} 
-                              className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800/40 cursor-pointer"
-                              title="Edit Invoice"
-                            >
-                              <Edit2 size={12} />
-                            </button>
-                            <button 
-                              onClick={() => handleDeleteInvoice(inv)} 
-                              className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
-                              title="Delete Invoice"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
+                        {/* Delete on hover */}
+                        <div className="flex items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+                          <button 
+                            onClick={() => handleDeletePayout(p)} 
+                            className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
+                            title="Delete Supplier Bill"
+                          >
+                            <Trash2 size={12} />
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </CardContent>
-                </div>
-                <div className="p-3 bg-slate-900/20 text-slate-500 text-[10px] text-center border-t border-slate-900">
-                  Client invoice payment routes correspond dynamically to Wa.me payment notifications.
-                </div>
-              </Card>
-            )}
-
-            {/* TAB 2: SUPPLIER PAYOUTS (PAYABLES) */}
-            {activeTab === "payables" && (
-              <Card className="lg:col-span-5 border-white/5 flex flex-col justify-between animate-fadeIn">
-                <div>
-                  <CardHeader className="pb-3 flex flex-row items-center justify-between">
-                    <div>
-                      <CardTitle className="text-md font-bold">Outbound Supplier Bills</CardTitle>
-                      <CardDescription className="text-xs">Incoming invoices due to vendors.</CardDescription>
                     </div>
-                    <div className="flex gap-2">
-                      {payouts.length > 0 && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex items-center gap-1 text-[10px] px-2.5 py-1 border-red-900/30 text-red-400 hover:bg-red-950/20 h-auto rounded-xl cursor-pointer" 
-                          onClick={handleDeleteAllPayouts}
-                        >
-                          Clear Bills
-                        </Button>
-                      )}
-                      <Button size="sm" variant="danger" className="flex items-center gap-1 text-[10px] px-2.5 py-1 bg-red-950/40 text-red-400 border border-red-500/20 hover:bg-red-900/20 h-auto rounded-xl cursor-pointer" onClick={() => setIsAddPayoutOpen(true)}>
-                        <Plus size={12} /> Log Bill
-                      </Button>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-3.5 max-h-[220px] overflow-y-auto pr-1">
-                    {payouts.map((p) => (
-                      <div key={p.id} className="p-3 bg-slate-900/50 border border-slate-800 rounded-xl flex justify-between items-center text-xs group relative hover:border-slate-700/80 transition-all duration-200">
-                        <div>
-                          <span className="text-[10px] font-bold text-rose-500/70">{p.id}</span>
-                          <h5 className="font-bold text-white mt-0.5">{p.vendor}</h5>
-                          <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold bg-slate-950 px-1.5 py-0.5 rounded mt-1.5 inline-block">
-                            {p.category}
-                          </span>
-                        </div>
-                        <div className="text-right flex items-center gap-3">
-                          <div>
-                            <div className="font-bold text-slate-200">{formatCurrency(p.amount)}</div>
-                            {p.status === "Paid" ? (
-                              <span className="px-2 py-0.5 rounded-full text-[9px] font-bold mt-1.5 inline-block border bg-emerald-950/60 text-emerald-400 border-emerald-900/20 uppercase tracking-wider">
-                                Settled
-                              </span>
-                            ) : (
-                              <button
-                                onClick={() => handleOpenPayout(p)}
-                                className="px-2.5 py-0.5 rounded-full text-[9px] font-bold mt-1.5 flex items-center gap-1 border bg-red-950/60 text-red-400 border-red-900/20 hover:bg-red-600 hover:text-white transition-all duration-200 cursor-pointer"
-                                title="Authorize IMPS Bank Transfer Payout"
-                              >
-                                <CreditCard size={10} /> Pay Bill
-                              </button>
-                            )}
-                          </div>
-
-                          {/* Delete on hover */}
-                          <div className="flex items-center md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
-                            <button 
-                              onClick={() => handleDeletePayout(p)} 
-                              className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-950/20 cursor-pointer"
-                              title="Delete Supplier Bill"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </CardContent>
-                </div>
-                <div className="p-3 bg-slate-900/20 text-slate-500 text-[10px] text-center border-t border-slate-900">
-                  Supplier payouts debit from bank accounts, updating expenditures and profitability indexes.
-                </div>
-              </Card>
-            )}
+                  ))}
+                </CardContent>
+              </div>
+              <div className="p-3 bg-slate-900/20 text-slate-500 text-[10px] text-center border-t border-slate-900">
+                Supplier payouts debit from bank accounts, updating expenditures and profitability indexes.
+              </div>
+            </Card>
           </div>
         </>
       )}
