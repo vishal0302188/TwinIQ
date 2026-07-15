@@ -119,10 +119,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const userInitials = userDisplayName.substring(0, 2).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-navy-950 text-slate-100 flex overflow-hidden">
+    <div className="h-screen w-screen bg-navy-950 text-slate-100 flex overflow-hidden">
       {/* SIDEBAR - DESKTOP ONLY */}
       <aside 
-        className={`glass-panel border-r border-white/5 hidden md:flex flex-col justify-between transition-all duration-300 relative z-30 ${
+        className={`glass-panel border-r border-white/5 hidden md:flex flex-col justify-between transition-all duration-300 relative z-30 h-full ${
           collapsed ? "w-16" : "w-64"
         }`}
       >
@@ -149,7 +149,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Navigation Links */}
-          <nav className="p-3 space-y-1.5 mt-4">
+          <nav className="p-3 space-y-1.5 mt-4 overflow-y-auto max-h-[calc(100vh-12rem)] scrollbar-none">
             {navItems.map((item) => {
               const active = pathname === item.path;
               const Icon = item.icon;
