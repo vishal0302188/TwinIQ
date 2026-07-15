@@ -34,10 +34,10 @@ interface Payout {
 }
 
 const initialInvoices: Invoice[] = [
-  { id: "inv-2041", client: "MalhotraTech Corp", amount: 150000, status: "Paid", date: "2026-06-15", phone: "9876543210" },
-  { id: "inv-2042", client: "Stellar Brands", amount: 420000, status: "Overdue", date: "2026-05-18", phone: "9123456780" },
-  { id: "inv-2043", client: "Apex Ventures", amount: 120000, status: "Paid", date: "2026-06-01", phone: "9988776655" },
-  { id: "inv-2044", client: "Nimbus Education", amount: 80000, status: "Pending", date: "2026-06-25", phone: "8877665544" }
+  { id: "inv-2041", client: "Microsoft India", amount: 1500000, status: "Paid", date: "2026-06-15", phone: "9876543210" },
+  { id: "inv-2042", client: "Tata Consultancy Services", amount: 4200000, status: "Overdue", date: "2026-05-18", phone: "9123456780" },
+  { id: "inv-2043", client: "Reliance Industries", amount: 1200000, status: "Paid", date: "2026-06-01", phone: "9988776655" },
+  { id: "inv-2044", client: "Google Cloud", amount: 800000, status: "Pending", date: "2026-06-25", phone: "8877665544" }
 ];
 
 const initialPayouts: Payout[] = [

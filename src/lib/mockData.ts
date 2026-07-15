@@ -85,31 +85,31 @@ export const saasKPIs: KPI[] = [
 export const saasCustomers: Customer[] = [
   {
     id: "c1",
-    name: "Vikram Malhotra",
-    email: "vikram@malhotratech.com",
-    avatar: "VM",
-    ltv: 485000,
+    name: "Microsoft India",
+    email: "billing@microsoft.com",
+    avatar: "MS",
+    ltv: 4850000,
     churnRisk: 14,
     favProducts: ["SaaS Core Module", "Custom API Integrations"],
     purchaseHistory: [
-      { date: "2026-06-15", amount: 150000, item: "SaaS Core Module" },
-      { date: "2026-04-10", amount: 250000, item: "Custom API Integrations" }
+      { date: "2026-06-15", amount: 1500000, item: "SaaS Core Module" },
+      { date: "2026-04-10", amount: 2500000, item: "Custom API Integrations" }
     ],
     timeline: [
       { date: "2026-06-15", event: "Purchased SaaS Core Module Upgrade" },
-      { date: "2026-05-20", event: "Support Ticket Resolved: API Latency" }
+      { date: "2026-05-20", event: "Support Ticket Resolved: Azure API Integration Latency" }
     ]
   },
   {
     id: "c2",
-    name: "Ananya Sharma",
-    email: "ananya@stellarbrands.in",
-    avatar: "AS",
-    ltv: 820000,
+    name: "Tata Consultancy Services",
+    email: "accounts@tcs.com",
+    avatar: "TC",
+    ltv: 8200000,
     churnRisk: 82,
     favProducts: ["Enterprise Dashboard", "Premium Compute Node"],
     purchaseHistory: [
-      { date: "2026-05-18", amount: 420000, item: "Enterprise Dashboard" }
+      { date: "2026-05-18", amount: 4200000, item: "Enterprise Dashboard" }
     ],
     timeline: [
       { date: "2026-06-28", event: "High inactivity (0 logins in 14 days)" }
@@ -365,13 +365,13 @@ export const initialNodes: BusinessNode[] = [
 export const initialEvents: BusinessEvent[] = [
   { id: "ev1", time: "10:42 AM", title: "Procurement Delayed", description: "Matrix Semi HK flagged shipping delay due to customs clearance hold. Impact estimate ₹85k.", category: "supplier", severity: "error" },
   { id: "ev2", time: "09:15 AM", title: "Low Stock Alert", description: "Fiber Optic Interface Switch count fell below safe threshold of 20 (currently 12).", category: "inventory", severity: "warning" },
-  { id: "ev3", time: "Yesterday", title: "Milestone Reached", description: "MalhotraTech completed final phase onboarding, unlocking ₹1.5L recurring billing.", category: "sales", severity: "info" }
+  { id: "ev3", time: "Yesterday", title: "Milestone Reached", description: "Microsoft India completed final phase onboarding, unlocking ₹1.5L recurring billing.", category: "sales", severity: "info" }
 ];
 
 export const mockIntelligence = [
   { id: "i-1", text: "You may lose ₹85,000 due to delayed procurement of Matrix Semi chipset.", type: "danger" },
   { id: "i-2", text: "Product Alpha Server Node demand is expected to increase by 18% next week.", type: "success" },
-  { id: "i-3", text: "Customer Stellar Brands has an 82% chance of churn due to inactivity.", type: "warning" }
+  { id: "i-3", text: "Customer Tata Consultancy Services has an 82% chance of churn due to inactivity.", type: "warning" }
 ];
 
 export interface SimulationInput {

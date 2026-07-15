@@ -14,9 +14,9 @@ export async function POST(req: Request) {
     // Default contexts
     let financeSummary = "Revenue: ₹1.24 Cr, Profit: ₹38.5 L, Cash Flow: ₹52.1 L";
     let lowStockAlerts = "Matrix Semi HK (procurement delayed), Fiber Optic Switch (12 in stock, min 20)";
-    let recentSales = "MalhotraTech (₹1.5L), Stellar Brands (₹4.2L)";
+    let recentSales = "Microsoft India (₹15L), Tata Consultancy Services (₹42L)";
     let employeeList = "John Doe (Developer), Sarah Connor (SysOps)";
-    let customerList = "Vikram Malhotra (LTV ₹4.8L), Stellar Brands (LTV ₹8.2L)";
+    let customerList = "Microsoft India (LTV ₹48.5L), Tata Consultancy Services (LTV ₹82L)";
     let fullInventory = "Premium Micro-Controller Chipset (0 stock), Solid State Drive (4 stock)";
 
     // Core KPIs default values matching main dashboard

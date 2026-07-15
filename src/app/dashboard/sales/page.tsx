@@ -22,9 +22,9 @@ interface Sale {
 }
 
 const initialSales: Sale[] = [
-  { id: "sale-801", customer: "MalhotraTech Corp", item: "Enterprise Core Module", amount: 150000, channel: "Razorpay", date: "2026-07-05", status: "Success" },
-  { id: "sale-802", customer: "Stellar Brands", item: "E-Commerce Integration API", amount: 420000, channel: "Bank Transfer", date: "2026-07-04", status: "Success" },
-  { id: "sale-803", customer: "Apex Ventures", item: "Consulting Support Retainer", amount: 75000, channel: "Cash", date: "2026-07-01", status: "Success" }
+  { id: "sale-801", customer: "Microsoft India", item: "Enterprise Core Module", amount: 1500000, channel: "Razorpay", date: "2026-07-05", status: "Success" },
+  { id: "sale-802", customer: "Tata Consultancy Services", item: "E-Commerce Integration API", amount: 4200000, channel: "Bank Transfer", date: "2026-07-04", status: "Success" },
+  { id: "sale-803", customer: "Reliance Industries", item: "Consulting Support Retainer", amount: 750000, channel: "Cash", date: "2026-07-01", status: "Success" }
 ];
 
 export default function SalesPage() {
