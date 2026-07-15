@@ -34,16 +34,16 @@ interface Payout {
 }
 
 const initialInvoices: Invoice[] = [
-  { id: "inv-2041", client: "Microsoft India", amount: 1500000, status: "Paid", date: "2026-06-15", phone: "9876543210" },
-  { id: "inv-2042", client: "Tata Consultancy Services", amount: 4200000, status: "Overdue", date: "2026-05-18", phone: "9123456780" },
-  { id: "inv-2043", client: "Reliance Industries", amount: 1200000, status: "Paid", date: "2026-06-01", phone: "9988776655" },
-  { id: "inv-2044", client: "Google Cloud", amount: 800000, status: "Pending", date: "2026-06-25", phone: "8877665544" }
+  { id: "inv-2041", client: "Acme Corp (AI Tier)", amount: 1500000, status: "Paid", date: "2026-06-15", phone: "9876543210" },
+  { id: "inv-2042", client: "Stripe India (Beta Tech)", amount: 4200000, status: "Overdue", date: "2026-05-18", phone: "9123456780" },
+  { id: "inv-2043", client: "Y-Combinator Cohort Partners", amount: 1200000, status: "Paid", date: "2026-06-01", phone: "9988776655" },
+  { id: "inv-2044", client: "Zeta Payments (Scale Tier)", amount: 800000, status: "Pending", date: "2026-06-25", phone: "8877665544" }
 ];
 
 const initialPayouts: Payout[] = [
   { id: "pay-101", vendor: "Amazon Web Services", amount: 120000, status: "Pending", dueDate: "2026-07-15", category: "Cloud Infrastructure", bankAccount: "HDFC A/C 9876" },
-  { id: "pay-102", vendor: "Silicon Chip Foundry", amount: 480000, status: "Overdue", dueDate: "2026-07-02", category: "Hardware Materials", bankAccount: "SBI A/C 5543" },
-  { id: "pay-103", vendor: "FedEx Logistical Corp", amount: 35000, status: "Paid", dueDate: "2026-06-28", category: "Logistics & Freight", bankAccount: "ICICI A/C 2211" }
+  { id: "pay-102", vendor: "OpenAI API Engine", amount: 480000, status: "Overdue", dueDate: "2026-07-02", category: "Cloud Infrastructure", bankAccount: "SBI A/C 5543" },
+  { id: "pay-103", vendor: "Vercel Enterprise", amount: 35000, status: "Paid", dueDate: "2026-06-28", category: "Cloud Infrastructure", bankAccount: "ICICI A/C 2211" }
 ];
 
 export default function FinancePage() {

@@ -74,165 +74,165 @@ export interface BusinessEvent {
 // 1. ENTERPRISE SOFTWARE & IT PRESET (DEFAULT)
 // ----------------------------------------------------
 export const saasKPIs: KPI[] = [
-  { name: "Revenue", value: "₹1.24 Cr", change: "+14.2% vs last month", isPositive: true, score: 92 },
-  { name: "Profit", value: "₹38.5 L", change: "+8.4% vs last month", isPositive: true, score: 87 },
-  { name: "Cash Flow", value: "₹52.1 L", change: "+11.5% vs last month", isPositive: true, score: 90 },
-  { name: "Inventory Health", value: "92%", change: "-2.1% low stock risk", isPositive: false, score: 72 },
-  { name: "Customer Satisfaction", value: "94.6%", change: "+0.8% support rating", isPositive: true, score: 95 },
-  { name: "Staff Productivity", value: "89.2%", change: "+3.1% milestone completions", isPositive: true, score: 89 }
+  { name: "ARR (Annual Recurring)", value: "₹12.4 Cr", change: "+14.2% vs last month", isPositive: true, score: 92 },
+  { name: "Net Monthly Burn", value: "₹8.5 L", change: "-12.4% lower expenses", isPositive: true, score: 87 },
+  { name: "Cash Runway", value: "18 Months", change: "Safe cash reserves", isPositive: true, score: 90 },
+  { name: "Cloud Infra Health", value: "92%", change: "-2.1% cloud quota limit", isPositive: false, score: 72 },
+  { name: "Customer Satisfaction", value: "94.6%", change: "+0.8% CSAT rating", isPositive: true, score: 95 },
+  { name: "Sprint Velocity", value: "89.2%", change: "+3.1% task completions", isPositive: true, score: 89 }
 ];
 
 export const saasCustomers: Customer[] = [
   {
     id: "c1",
-    name: "Microsoft India",
-    email: "billing@microsoft.com",
-    avatar: "MS",
+    name: "Acme Corp (AI Tier)",
+    email: "billing@acme.com",
+    avatar: "AC",
     ltv: 4850000,
     churnRisk: 14,
-    favProducts: ["SaaS Core Module", "Custom API Integrations"],
+    favProducts: ["Enterprise AI Module", "Custom LLM Fine-Tuning"],
     purchaseHistory: [
-      { date: "2026-06-15", amount: 1500000, item: "SaaS Core Module" },
-      { date: "2026-04-10", amount: 2500000, item: "Custom API Integrations" }
+      { date: "2026-06-15", amount: 1500000, item: "Enterprise AI Module" },
+      { date: "2026-04-10", amount: 2500000, item: "Custom LLM Fine-Tuning" }
     ],
     timeline: [
-      { date: "2026-06-15", event: "Purchased SaaS Core Module Upgrade" },
-      { date: "2026-05-20", event: "Support Ticket Resolved: Azure API Integration Latency" }
+      { date: "2026-06-15", event: "Upgraded subscription package to Premium Enterprise AI" },
+      { date: "2026-05-20", event: "Support Ticket Resolved: LLM inference latency spikes" }
     ]
   },
   {
     id: "c2",
-    name: "Tata Consultancy Services",
-    email: "accounts@tcs.com",
-    avatar: "TC",
+    name: "Stripe India (Beta Tech)",
+    email: "accounts@stripe.com",
+    avatar: "ST",
     ltv: 8200000,
     churnRisk: 82,
-    favProducts: ["Enterprise Dashboard", "Premium Compute Node"],
+    favProducts: ["Enterprise AI Module", "Premium Compute Node"],
     purchaseHistory: [
-      { date: "2026-05-18", amount: 4200000, item: "Enterprise Dashboard" }
+      { date: "2026-05-18", amount: 4200000, item: "Enterprise AI Module" }
     ],
     timeline: [
-      { date: "2026-06-28", event: "High inactivity (0 logins in 14 days)" }
+      { date: "2026-06-28", event: "High inactivity (Zero admin console sessions in 14 days)" }
     ]
   },
   {
     id: "c3",
-    name: "Reliance Industries",
-    email: "procurement@ril.com",
-    avatar: "RI",
+    name: "Y-Combinator Cohort Partners",
+    email: "partner@yc.com",
+    avatar: "YC",
     ltv: 9500000,
     churnRisk: 5,
-    favProducts: ["Enterprise Dashboard", "Analytics Engine"],
+    favProducts: ["Analytics Dashboard Bundle", "Custom LLM Fine-Tuning"],
     purchaseHistory: [
-      { date: "2026-06-01", amount: 5500000, item: "Enterprise Dashboard" },
-      { date: "2026-03-12", amount: 4000000, item: "Analytics Engine" }
+      { date: "2026-06-01", amount: 5500000, item: "Analytics Dashboard Bundle" },
+      { date: "2026-03-12", amount: 4000000, item: "Custom LLM Fine-Tuning" }
     ],
     timeline: [
-      { date: "2026-06-01", event: "Signed Annual Enterprise Licensing SLA" }
+      { date: "2026-06-01", event: "Activated YC batch package promotion licenses" }
     ]
   },
   {
     id: "c4",
-    name: "Google Cloud India",
-    email: "gcp-billing@google.com",
-    avatar: "GC",
+    name: "Zeta Payments (Scale Tier)",
+    email: "scale-billing@zeta.com",
+    avatar: "ZE",
     ltv: 6800000,
     churnRisk: 78,
-    favProducts: ["Custom API Integrations", "SaaS Core Module"],
+    favProducts: ["Custom API Integrations", "Enterprise AI Module"],
     purchaseHistory: [
       { date: "2026-05-25", amount: 6800000, item: "Custom API Integrations" }
     ],
     timeline: [
-      { date: "2026-07-10", event: "API Connection Dropped: Cloud Router disconnect" }
+      { date: "2026-07-10", event: "Webhook delivery failure: Connection timed out" }
     ]
   },
   {
     id: "c5",
-    name: "Infosys Limited",
-    email: "finance@infosys.com",
-    avatar: "IN",
+    name: "Razorpay Direct",
+    email: "billing@razorpay.com",
+    avatar: "RP",
     ltv: 5500000,
     churnRisk: 18,
-    favProducts: ["SaaS Core Module"],
+    favProducts: ["Enterprise AI Module"],
     purchaseHistory: [
-      { date: "2026-05-02", amount: 5500000, item: "SaaS Core Module" }
+      { date: "2026-05-02", amount: 5500000, item: "Enterprise AI Module" }
     ],
     timeline: [
-      { date: "2026-05-02", event: "Account setup and initial seed sync completed" }
+      { date: "2026-05-02", event: "Onboarding checklist completed: Seed data ingested" }
     ]
   },
   {
     id: "c6",
-    name: "Wipro Technologies",
-    email: "billing@wipro.com",
-    avatar: "WP",
+    name: "CRED Tech Labs",
+    email: "growth@cred.club",
+    avatar: "CR",
     ltv: 4200000,
     churnRisk: 45,
-    favProducts: ["Analytics Engine"],
+    favProducts: ["Analytics Dashboard Bundle"],
     purchaseHistory: [
-      { date: "2026-04-18", amount: 4200000, item: "Analytics Engine" }
+      { date: "2026-04-18", amount: 4200000, item: "Analytics Dashboard Bundle" }
     ],
     timeline: [
-      { date: "2026-06-20", event: "Support query logged: Dashboard widget lag" }
+      { date: "2026-06-20", event: "Support query: Ingestion API latency metrics requested" }
     ]
   },
   {
     id: "c7",
-    name: "HDFC Bank Core Tech",
-    email: "hdfc-tech@hdfcbank.com",
-    avatar: "HD",
+    name: "Paytm PG Team",
+    email: "pg-tech@paytm.com",
+    avatar: "PT",
     ltv: 12000000,
     churnRisk: 12,
-    favProducts: ["Enterprise Dashboard", "Custom API Integrations"],
+    favProducts: ["Enterprise AI Module", "Custom API Integrations"],
     purchaseHistory: [
-      { date: "2026-06-20", amount: 8000000, item: "Enterprise Dashboard" },
+      { date: "2026-06-20", amount: 8000000, item: "Enterprise AI Module" },
       { date: "2026-02-15", amount: 4000000, item: "Custom API Integrations" }
     ],
     timeline: [
-      { date: "2026-06-20", event: "Completed regulatory security audit compliance checklist" }
+      { date: "2026-06-20", event: "Completed SOC-2 Type II regulatory security compliance check" }
     ]
   },
   {
     id: "c8",
-    name: "Bharti Airtel Enterprise",
-    email: "telecom-billing@airtel.com",
-    avatar: "BA",
+    name: "Swiggy Engine Hub",
+    email: "swiggy-labs@swiggy.in",
+    avatar: "SW",
     ltv: 8800000,
     churnRisk: 72,
-    favProducts: ["SaaS Core Module"],
+    favProducts: ["Enterprise AI Module"],
     purchaseHistory: [
       { date: "2026-05-10", amount: 8800000, item: "SaaS Core Module" }
     ],
     timeline: [
-      { date: "2026-07-08", event: "High inactivity (No active logins for Airtel Admin in 10 days)" }
+      { date: "2026-07-08", event: "Inactivity warning: No active API requests logged for 7 days" }
     ]
   }
 ];
 
 export const saasInventory: InventoryItem[] = [
-  { id: "i1", name: "Product Alpha Server Node", stock: 145, minStock: 25, demandForecast: 18, supplier: "Titan Silicon Labs", supplierRisk: "low", reorderQuantity: 50, status: "In Stock" },
-  { id: "i2", name: "Fiber Optic Interface Switch", stock: 12, minStock: 20, demandForecast: 5, supplier: "Delhi Opto-Hardware", supplierRisk: "medium", reorderQuantity: 30, status: "Low Stock" },
-  { id: "i3", name: "Solid State Drive Array 4TB", stock: 4, minStock: 15, demandForecast: 22, supplier: "SpeedData Suppliers", supplierRisk: "high", reorderQuantity: 25, status: "Low Stock" },
-  { id: "i4", name: "Premium Micro-Controller Chipset", stock: 0, minStock: 50, demandForecast: 30, supplier: "Matrix Semi HK", supplierRisk: "high", reorderQuantity: 100, status: "Out of Stock" },
-  { id: "i5", name: "Rack Cooling Fan Array 12V", stock: 85, minStock: 15, demandForecast: 10, supplier: "CoolMax Systems", supplierRisk: "low", reorderQuantity: 20, status: "In Stock" },
-  { id: "i6", name: "Cat6 Ethernet Spool 305m", stock: 20, minStock: 10, demandForecast: 8, supplier: "Delhi Cables Ltd", supplierRisk: "low", reorderQuantity: 15, status: "In Stock" },
-  { id: "i7", name: "Hardware Firewall Node 10Gbps", stock: 3, minStock: 5, demandForecast: 12, supplier: "ShieldTech Shenzhen", supplierRisk: "medium", reorderQuantity: 5, status: "Low Stock" },
-  { id: "i8", name: "DDR5 Server RAM 64GB Module", stock: 62, minStock: 20, demandForecast: 25, supplier: "MemCore Taiwan", supplierRisk: "low", reorderQuantity: 40, status: "In Stock" },
-  { id: "i9", name: "Uninterruptible Power Supply 2kVA", stock: 7, minStock: 10, demandForecast: 15, supplier: "PowerForce India", supplierRisk: "medium", reorderQuantity: 10, status: "Low Stock" },
-  { id: "i10", name: "SFP+ Transceiver Transmitter", stock: 112, minStock: 30, demandForecast: 40, supplier: "OptoLink Connect", supplierRisk: "low", reorderQuantity: 50, status: "In Stock" }
+  { id: "i1", name: "AWS EC2 Spot Instance Clusters", stock: 145, minStock: 25, demandForecast: 18, supplier: "Amazon Web Services", supplierRisk: "low", reorderQuantity: 50, status: "In Stock" },
+  { id: "i2", name: "OpenAI Token Quota (M/min)", stock: 12, minStock: 20, demandForecast: 5, supplier: "OpenAI Inc", supplierRisk: "medium", reorderQuantity: 30, status: "Low Stock" },
+  { id: "i3", name: "Vercel Edge Function Seats", stock: 4, minStock: 15, demandForecast: 22, supplier: "Vercel Enterprise", supplierRisk: "high", reorderQuantity: 25, status: "Low Stock" },
+  { id: "i4", name: "PostgreSQL Storage Capacity (GB)", stock: 0, minStock: 50, demandForecast: 30, supplier: "Supabase Cloud", supplierRisk: "high", reorderQuantity: 100, status: "Out of Stock" },
+  { id: "i5", name: "Pinecone Vector Index Spaces", stock: 85, minStock: 15, demandForecast: 10, supplier: "Pinecone Systems", supplierRisk: "low", reorderQuantity: 20, status: "In Stock" },
+  { id: "i6", name: "GitHub Enterprise Dev Licenses", stock: 20, minStock: 10, demandForecast: 8, supplier: "GitHub Inc", supplierRisk: "low", reorderQuantity: 15, status: "In Stock" },
+  { id: "i7", name: "Auth0 MAU Connection Capacity", stock: 3, minStock: 5, demandForecast: 12, supplier: "Okta Inc / Auth0", supplierRisk: "medium", reorderQuantity: 5, status: "Low Stock" },
+  { id: "i8", name: "SendGrid Mail Relay Credits (10k)", stock: 62, minStock: 20, demandForecast: 25, supplier: "Twilio SendGrid", supplierRisk: "low", reorderQuantity: 40, status: "In Stock" },
+  { id: "i9", name: "Algolia Search Queries Units (10k)", stock: 7, minStock: 10, demandForecast: 15, supplier: "Algolia Inc", supplierRisk: "medium", reorderQuantity: 10, status: "Low Stock" },
+  { id: "i10", name: "Cloudflare Core Bandwidth (TB)", stock: 112, minStock: 30, demandForecast: 40, supplier: "Cloudflare Inc", supplierRisk: "low", reorderQuantity: 50, status: "In Stock" }
 ];
 
 export const saasEmployees: Employee[] = [
-  { id: "e1", name: "Kunal Dey", role: "VP Engineering", department: "Engineering", avatar: "KD", performance: 94, attendance: 98, productivity: 95 },
-  { id: "e2", name: "Ritu Sengupta", role: "Head of Marketing", department: "Marketing", avatar: "RS", performance: 88, attendance: 95, productivity: 87 },
-  { id: "e3", name: "Kabir Khan", role: "Inventory Lead", department: "Operations", avatar: "KK", performance: 82, attendance: 92, productivity: 81 },
-  { id: "e4", name: "Pooja Hegde", role: "Finance Director", department: "Finance", avatar: "PH", performance: 96, attendance: 99, productivity: 97 },
-  { id: "e5", name: "Vikram Malhotra", role: "Senior Architect", department: "Engineering", avatar: "VM", performance: 92, attendance: 97, productivity: 91 },
+  { id: "e1", name: "Kunal Dey", role: "Founder & CEO", department: "Executive", avatar: "KD", performance: 94, attendance: 98, productivity: 95 },
+  { id: "e2", name: "Ritu Sengupta", role: "Co-Founder & CTO", department: "Engineering", avatar: "RS", performance: 88, attendance: 95, productivity: 87 },
+  { id: "e3", name: "Kabir Khan", role: "Lead AI Architect", department: "Engineering", avatar: "KK", performance: 82, attendance: 92, productivity: 81 },
+  { id: "e4", name: "Pooja Hegde", role: "Head of Growth & Marketing", department: "Marketing", avatar: "PH", performance: 96, attendance: 99, productivity: 97 },
+  { id: "e5", name: "Vikram Malhotra", role: "Senior Frontend Engineer", department: "Engineering", avatar: "VM", performance: 92, attendance: 97, productivity: 91 },
   { id: "e6", name: "Ananya Sharma", role: "Customer Success Lead", department: "Customer Success", avatar: "AS", performance: 95, attendance: 96, productivity: 93 },
-  { id: "e7", name: "Sameer Verma", role: "Logistics Specialist", department: "Operations", avatar: "SV", performance: 85, attendance: 94, productivity: 86 },
-  { id: "e8", name: "Neha Gupta", role: "HR Business Partner", department: "Human Resources", avatar: "NG", performance: 89, attendance: 93, productivity: 88 },
-  { id: "e9", name: "Arjun Mehta", role: "Security Specialist", department: "Engineering", avatar: "AM", performance: 90, attendance: 95, productivity: 89 },
-  { id: "e10", name: "Deepa Rao", role: "Billing Accountant", department: "Finance", avatar: "DR", performance: 91, attendance: 97, productivity: 90 }
+  { id: "e7", name: "Sameer Verma", role: "DevOps Engineer", department: "Engineering", avatar: "SV", performance: 85, attendance: 94, productivity: 86 },
+  { id: "e8", name: "Neha Gupta", role: "Lead Product Designer", department: "Product Design", avatar: "NG", performance: 89, attendance: 93, productivity: 88 },
+  { id: "e9", name: "Arjun Mehta", role: "Security Auditor", department: "Engineering", avatar: "AM", performance: 90, attendance: 95, productivity: 89 },
+  { id: "e10", name: "Deepa Rao", role: "Finance Counsel", department: "Finance", avatar: "DR", performance: 91, attendance: 97, productivity: 90 }
 ];
 
 export const saasFinance: FinanceRecord[] = [
@@ -701,24 +701,24 @@ export const initialNodes: BusinessNode[] = [
   { id: "business", label: "TwinIQ Core", health: "green", score: 87, description: "TwinIQ digital twin core engine. Operating optimally.", x: 400, y: 300, details: ["Overall Score: 87%", "All data feeds connected", "Active predictions loaded"] },
   { id: "customers", label: "Customers", health: "green", score: 95, description: "Customer satisfaction, LTV, retention indexes.", x: 400, y: 100, details: ["CSAT Score: 94.6%", "LTV Average: ₹1.8L", "Churn Probability: 4.2% avg"] },
   { id: "finance", label: "Finance", health: "green", score: 90, description: "Cash flow tracking, EBITDA projections, invoice processing.", x: 600, y: 180, details: ["Net Profit Margin: 31%", "Cash Reserves: ₹52.1 L", "Receivables collection: 14 days average"] },
-  { id: "inventory", label: "Inventory", health: "yellow", score: 72, description: "Stock levels, SKU rotation, supply delays.", x: 650, y: 350, details: ["Active SKUs: 1,240", "Low stock alerts: 4 SKUs", "Procurement delays: 1 key supplier"] },
-  { id: "employees", label: "Employees", health: "green", score: 89, description: "E-NPS, performance evaluation, retention rates.", x: 550, y: 480, details: ["FTEs count: 42", "Productivity Index: 89.2%", "E-NPS Score: 78/100"] },
-  { id: "suppliers", label: "Suppliers", health: "red", score: 45, description: "Supplier SLA targets, material delays, procurement risk.", x: 250, y: 480, details: ["Supplier SLA: 76% (Target: 95%)", "Active shipment delays: 2 containers", "Lead time spike: +12 days"] },
-  { id: "sales", label: "Sales", health: "green", score: 92, description: "Pipeline health, CRM closing velocity, MRR tracking.", x: 150, y: 350, details: ["Pipeline Value: ₹3.2 Cr", "Win Rate: 28%", "SQL to Won velocity: 19 days"] },
-  { id: "marketing", label: "Marketing", health: "green", score: 85, description: "CAC, LTV-to-CAC, brand sentiment, ROAS.", x: 200, y: 180, details: ["ROAS: 4.2x (Instagram)", "CAC Average: ₹1,200", "Monthly Traffic: 250k sessions"] },
+  { id: "inventory", label: "Cloud Quotas", health: "yellow", score: 72, description: "API limits, DB storage, Vercel compute quotas.", x: 650, y: 350, details: ["Active Keys: 12", "Low stock alerts: 2 Quotas", "AWS overage risk: Medium"] },
+  { id: "employees", label: "Dev Crew", health: "green", score: 89, description: "E-NPS, performance evaluation, retention rates.", x: 550, y: 480, details: ["FTEs count: 10", "Sprint Velocity: 89.2%", "E-NPS Score: 78/100"] },
+  { id: "suppliers", label: "Cloud Providers", health: "red", score: 45, description: "API provider SLAs, network latency, outage incidents.", x: 250, y: 480, details: ["Provider SLA: 98.2% (Target: 99.9%)", "Active latency spike: +120ms", "Incidents logged: 1 (Supabase)"] },
+  { id: "sales", label: "Sales Pipeline", health: "green", score: 92, description: "Pipeline health, CRM closing velocity, MRR tracking.", x: 150, y: 350, details: ["Pipeline Value: ₹3.2 Cr", "Win Rate: 28%", "SQL to Won velocity: 19 days"] },
+  { id: "marketing", label: "SaaS Growth", health: "green", score: 85, description: "CAC, LTV-to-CAC, brand sentiment, ROAS.", x: 200, y: 180, details: ["ROAS: 4.2x (Google Ads)", "CAC Average: ₹1,200", "Monthly Traffic: 250k sessions"] },
   { id: "operations", label: "Operations", health: "yellow", score: 78, description: "Order fulfillment times, system uptime, logistics efficiency.", x: 400, y: 500, details: ["Fulfillment time: 28 hrs (Target: 24 hrs)", "Warehouse utilization: 91%", "Deliveries on time: 94.1%"] },
 ];
 
 export const initialEvents: BusinessEvent[] = [
-  { id: "ev1", time: "10:42 AM", title: "Procurement Delayed", description: "Matrix Semi HK flagged shipping delay due to customs clearance hold. Impact estimate ₹85k.", category: "supplier", severity: "error" },
-  { id: "ev2", time: "09:15 AM", title: "Low Stock Alert", description: "Fiber Optic Interface Switch count fell below safe threshold of 20 (currently 12).", category: "inventory", severity: "warning" },
-  { id: "ev3", time: "Yesterday", title: "Milestone Reached", description: "Microsoft India completed final phase onboarding, unlocking ₹1.5L recurring billing.", category: "sales", severity: "info" }
+  { id: "ev1", time: "10:42 AM", title: "Supabase DB Full", description: "Supabase database storage capacity exceeded. Impact estimate ₹85k due to query slowdown.", category: "supplier", severity: "error" },
+  { id: "ev2", time: "09:15 AM", title: "AWS Limit Warning", description: "EC2 spot instance capacity fell below threshold (currently 4 clusters).", category: "inventory", severity: "warning" },
+  { id: "ev3", time: "Yesterday", title: "Acme Corp Upgraded", description: "Acme Corp (AI Tier) upgraded package, unlocking ₹1.5L recurring billing.", category: "sales", severity: "info" }
 ];
 
 export const mockIntelligence = [
-  { id: "i-1", text: "You may lose ₹85,000 due to delayed procurement of Matrix Semi chipset.", type: "danger" },
-  { id: "i-2", text: "Product Alpha Server Node demand is expected to increase by 18% next week.", type: "success" },
-  { id: "i-3", text: "Customer Tata Consultancy Services has an 82% chance of churn due to inactivity.", type: "warning" }
+  { id: "i-1", text: "You may lose ₹85,000 due to delayed compute provisioning or database capacity constraints.", type: "danger" },
+  { id: "i-2", text: "Vercel edge function traffic is expected to increase by 18% next week.", type: "success" },
+  { id: "i-3", text: "Customer Stripe India has an 82% chance of churn due to API inactivity.", type: "warning" }
 ];
 
 export interface SimulationInput {
