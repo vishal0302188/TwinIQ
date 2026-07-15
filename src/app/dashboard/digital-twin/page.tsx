@@ -15,12 +15,59 @@ export default function DigitalTwinPage() {
   const [selectedNode, setSelectedNode] = useState<BusinessNode | null>(null);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
 
+  // Operational tuning config states
+  const [tunedScore, setTunedScore] = useState(80);
+  const [warningThreshold, setWarningThreshold] = useState(75);
+  const [criticalThreshold, setCriticalThreshold] = useState(50);
+  const [nodeConfigs, setNodeConfigs] = useState<Record<string, { warning: number, critical: number }>>({});
+
   useEffect(() => {
     setNodes(initialNodes);
     // Auto-select the central business node on load to populate details
     const central = initialNodes.find(n => n.id === "business");
     if (central) setSelectedNode(central);
   }, []);
+
+  // Sync sliders when selectedNode changes
+  useEffect(() => {
+    if (selectedNode) {
+      setTunedScore(selectedNode.score);
+      const conf = nodeConfigs[selectedNode.id] || { warning: 75, critical: 50 };
+      setWarningThreshold(conf.warning);
+      setCriticalThreshold(conf.critical);
+    }
+  }, [selectedNode, nodeConfigs]);
+
+  const handleTuneNode = () => {
+    if (!selectedNode) return;
+    
+    // Calculate new health flag based on tuned thresholds
+    let newHealth: "green" | "yellow" | "red" = "green";
+    if (tunedScore < criticalThreshold) {
+      newHealth = "red";
+    } else if (tunedScore < warningThreshold) {
+      newHealth = "yellow";
+    }
+
+    const updatedNode = {
+      ...selectedNode,
+      score: tunedScore,
+      health: newHealth,
+      details: [
+        `Overall Score: ${tunedScore}% (Manually Tuned)`,
+        ...selectedNode.details.slice(1) // preserve rest of details feed
+      ]
+    };
+
+    setNodeConfigs(prev => ({
+      ...prev,
+      [selectedNode.id]: { warning: warningThreshold, critical: criticalThreshold }
+    }));
+
+    setNodes(prev => prev.map(n => n.id === selectedNode.id ? updatedNode : n));
+    setSelectedNode(updatedNode);
+    alert(`Operational Node [${selectedNode.label}] tuned successfully! Twin maps synchronized.`);
+  };
 
   return (
     <div className="space-y-6 min-h-[calc(100vh-8rem)] flex flex-col">
@@ -280,6 +327,63 @@ export default function DigitalTwinPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* TUNING PANEL */}
+                  <div className="pt-4 border-t border-slate-900 space-y-4">
+                    <h5 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <Sparkles size={12} className="text-purple-400" /> Tune Operational Thresholds
+                    </h5>
+
+                    {/* Score Slider */}
+                    <div>
+                      <div className="flex justify-between text-[10px] mb-1 font-medium">
+                        <span className="text-slate-400">Target Score</span>
+                        <span className="text-white font-bold">{tunedScore}%</span>
+                      </div>
+                      <input 
+                        type="range" min="10" max="100" value={tunedScore} 
+                        onChange={(e) => setTunedScore(Number(e.target.value))}
+                        className="w-full accent-blue-500 h-1 bg-slate-900 rounded-lg cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Warning Slider */}
+                      <div>
+                        <div className="flex justify-between text-[9px] mb-1 font-medium">
+                          <span className="text-slate-500">Warning Limit</span>
+                          <span className="text-amber-400 font-bold">{warningThreshold}%</span>
+                        </div>
+                        <input 
+                          type="range" min="40" max="90" value={warningThreshold} 
+                          onChange={(e) => setWarningThreshold(Number(e.target.value))}
+                          className="w-full accent-amber-500 h-1 bg-slate-900 rounded-lg cursor-pointer"
+                        />
+                      </div>
+
+                      {/* Critical Slider */}
+                      <div>
+                        <div className="flex justify-between text-[9px] mb-1 font-medium">
+                          <span className="text-slate-500">Critical Limit</span>
+                          <span className="text-red-400 font-bold">{criticalThreshold}%</span>
+                        </div>
+                        <input 
+                          type="range" min="10" max="60" value={criticalThreshold} 
+                          onChange={(e) => setCriticalThreshold(Number(e.target.value))}
+                          className="w-full accent-red-500 h-1 bg-slate-900 rounded-lg cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={handleTuneNode}
+                      className="w-full justify-center text-[10px] py-1.5 h-auto rounded-xl mt-2 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white cursor-pointer"
+                    >
+                      Sync Node Configuration
+                    </Button>
+                  </div>
                 </CardContent>
               </div>
 

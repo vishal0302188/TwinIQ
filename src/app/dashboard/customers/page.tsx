@@ -67,6 +67,12 @@ export default function CustomersPage() {
   const [newInvPaymentMethod, setNewInvPaymentMethod] = useState<"online" | "cash">("online");
   const [submittingInvoice, setSubmittingInvoice] = useState(false);
 
+  // Customer success outreach simulated chat overlay
+  const [isOutreachChatOpen, setIsOutreachChatOpen] = useState(false);
+  const [chatMessages, setChatMessages] = useState<{ sender: "cs" | "client"; text: string }[]>([]);
+  const [chatting, setChatting] = useState(false);
+  const [chatComplete, setChatComplete] = useState(false);
+
   useEffect(() => {
     async function loadData() {
       // 1. Load Invoices
@@ -356,6 +362,73 @@ export default function CustomersPage() {
     // Create WhatsApp Web/Mobile redirect URL
     const waUrl = `https://api.whatsapp.com/send?phone=${clientPhone.replace(/[^0-9]/g, "")}&text=${encodeURIComponent(cleanText)}`;
     window.open(waUrl, "_blank");
+  };
+
+  // Trigger Simulated WhatsApp Success Outreach
+  const handleTriggerOutreach = (cust: Customer) => {
+    setIsOutreachChatOpen(true);
+    setChatComplete(false);
+    setChatting(true);
+    setChatMessages([
+      { sender: "cs", text: `Establishing secure connection with ${cust.name} operations dashboard...` }
+    ]);
+
+    // Simulated conversation delays
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        sender: "cs",
+        text: `Hi ${cust.name} Billing & Operations team! We noticed some integration latencies and inactive logins on your TwinIQ configurations. Is everything running smoothly?`
+      }]);
+    }, 1500);
+
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        sender: "client",
+        text: `Hi TwinIQ Support! Thanks for reaching out. We actually had a configuration issue on our middleware that blocked data sync. We are working to resolve it today.`
+      }]);
+    }, 3500);
+
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        sender: "cs",
+        text: `Got it! I've pre-configured your cloud sync to dynamically scale and bypass your middleware blocks. You should see active data flowing now.`
+      }]);
+    }, 5500);
+
+    setTimeout(() => {
+      setChatMessages(prev => [...prev, {
+        sender: "client",
+        text: `Amazing, the connection is instantly stable now! We really appreciate the proactive outreach. We will continue our subscription.`
+      }]);
+      setChatting(false);
+      setChatComplete(true);
+    }, 7500);
+  };
+
+  const handleCompleteOutreach = async () => {
+    if (!selectedCust) return;
+    try {
+      const updatedCustomer = {
+        ...selectedCust,
+        churnRisk: 12,
+        timeline: [
+          { date: "Today", event: "Automated Customer Success outreach completed: Retained account." },
+          ...selectedCust.timeline
+        ]
+      };
+      
+      if (db) {
+        await setDoc(doc(db, "customers", selectedCust.id), updatedCustomer);
+      } else {
+        // Fallback local list sync
+        setCustomers(prev => prev.map(c => c.id === selectedCust.id ? updatedCustomer : c));
+      }
+      setSelectedCust(updatedCustomer);
+      setIsOutreachChatOpen(false);
+      alert("Customer retained successfully! Churn risk lowered to 12%.");
+    } catch (err) {
+      console.error("Outreach complete save error:", err);
+    }
   };
 
   return (
@@ -704,7 +777,12 @@ export default function CustomersPage() {
                             <p className="text-[10px] text-red-400/80 mt-0.5">Customer active sessions fell by 82% recently. Auto-triggered recommendations loaded.</p>
                           </div>
                         </div>
-                        <Button variant="danger" size="sm" className="shrink-0">
+                        <Button 
+                          variant="danger" 
+                          size="sm" 
+                          className="shrink-0"
+                          onClick={() => handleTriggerOutreach(selectedCust)}
+                        >
                           Trigger CS Outreach
                         </Button>
                       </div>
@@ -934,6 +1012,80 @@ export default function CustomersPage() {
                 </Button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* SIMULATED WHATSAPP OUTREACH CHAT OVERLAY */}
+      {isOutreachChatOpen && selectedCust && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
+          <div className="w-full max-w-md bg-slate-950 border border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-[0_8px_32px_rgba(0,0,0,0.5)] animate-scaleUp h-[500px]">
+            {/* Header */}
+            <div className="bg-slate-900 border-b border-white/5 p-4 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
+                  {selectedCust.avatar}
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-white">{selectedCust.name}</h3>
+                  <span className="text-[9px] text-emerald-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Active Support Outreach
+                  </span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsOutreachChatOpen(false)} 
+                className="text-slate-400 hover:text-white cursor-pointer"
+                disabled={chatting}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Chat Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-950 flex flex-col">
+              {chatMessages.map((msg, index) => {
+                const isCS = msg.sender === "cs";
+                return (
+                  <div 
+                    key={index}
+                    className={`max-w-[80%] rounded-2xl p-3 text-xs leading-normal ${
+                      isCS 
+                        ? "bg-blue-600/10 text-blue-300 border border-blue-500/20 self-start" 
+                        : "bg-slate-900 text-slate-200 border border-slate-800 self-end"
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
+                );
+              })}
+              {chatting && (
+                <div className="bg-blue-600/10 text-blue-300 border border-blue-500/10 rounded-2xl p-3 text-[10px] self-start animate-pulse flex items-center gap-1.5">
+                  <RefreshCw className="animate-spin" size={10} /> Customer representative is typing...
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 bg-slate-900/60 border-t border-white/5 flex flex-col gap-2">
+              {chatComplete ? (
+                <div className="space-y-2">
+                  <div className="text-[10px] text-emerald-400 font-bold text-center flex items-center justify-center gap-1">
+                    <CheckCircle size={12} /> Outreach Dialog Completed Successfully!
+                  </div>
+                  <Button 
+                    className="w-full justify-center bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                    onClick={handleCompleteOutreach}
+                  >
+                    Commit Retain Actions
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-[10px] text-slate-500 text-center italic">
+                  Simulating proactive telemetry solution dialogue...
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}

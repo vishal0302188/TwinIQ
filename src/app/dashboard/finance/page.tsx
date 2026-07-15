@@ -532,6 +532,15 @@ export default function FinancePage() {
     .filter(p => p.status !== "Paid")
     .reduce((sum, p) => sum + p.amount, 0);
 
+  // Burn Rate & Runway Computations
+  const totalReserves = currentFin.cashFlow || 5210000;
+  // Calculate average monthly outbound payouts (from payouts list status)
+  const monthlyBurn = payouts.reduce((sum, p) => sum + p.amount, 0) / 2 + 180000; // Average of payouts + base employee salary estimate
+  // Calculate average monthly paid client revenue
+  const monthlyInflow = invoices.filter(inv => inv.status === "Paid").reduce((sum, inv) => sum + inv.amount, 0);
+  const netBurnRate = monthlyBurn - monthlyInflow;
+  const runwayMonths = netBurnRate > 0 ? (totalReserves / netBurnRate) : 999;
+
   return (
     <div className="space-y-6">
       {/* Title Header */}
@@ -594,6 +603,64 @@ export default function FinancePage() {
               <span className="text-[10px] text-slate-500 font-semibold mt-2">
                 Receivables: {formatCurrency(outstandingReceivables)}
               </span>
+            </Card>
+          </div>
+
+          {/* CASH RUNWAY & TREASURY INTELLIGENCE DECK */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 my-6">
+            <Card className="md:col-span-3 border-white/5 bg-slate-950/60 p-5 flex flex-col md:flex-row justify-between items-center gap-6">
+              <div className="space-y-2 max-w-lg w-full">
+                <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">Cash Runway & Burn Rate Diagnostics</span>
+                <h4 className="text-md font-bold text-white">Operational Run-Time Analysis</h4>
+                <p className="text-slate-400 text-xs leading-normal">
+                  Our digital twin computes monthly OpEx (supplier bills + salary estimates) against incoming invoice collections to forecast your operational runway.
+                </p>
+                <div className="flex gap-4 pt-2 text-xs">
+                  <div className="bg-slate-900/60 border border-slate-800/80 p-2.5 rounded-xl text-center min-w-[120px]">
+                    <span className="text-[9px] text-slate-500 block uppercase font-bold">Monthly Burn</span>
+                    <span className="text-sm font-bold text-rose-400">{formatCurrency(monthlyBurn)}</span>
+                  </div>
+                  <div className="bg-slate-900/60 border border-slate-800/80 p-2.5 rounded-xl text-center min-w-[120px]">
+                    <span className="text-[9px] text-slate-500 block uppercase font-bold">Monthly Inflow</span>
+                    <span className="text-sm font-bold text-emerald-400">{formatCurrency(monthlyInflow)}</span>
+                  </div>
+                  <div className="bg-slate-900/60 border border-slate-800/80 p-2.5 rounded-xl text-center min-w-[120px]">
+                    <span className="text-[9px] text-slate-500 block uppercase font-bold">Net Burn Rate</span>
+                    <span className={`text-sm font-bold ${netBurnRate > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                      {netBurnRate > 0 ? `+${formatCurrency(netBurnRate)}` : formatCurrency(netBurnRate)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 w-full md:max-w-xs flex flex-col justify-center items-center text-center">
+                <span className="text-[10px] text-slate-500 uppercase font-bold mb-2">Runway Forecast</span>
+                {netBurnRate <= 0 ? (
+                  <div className="space-y-2">
+                    <div className="w-16 h-16 rounded-full bg-emerald-950/60 text-emerald-400 border border-emerald-500/20 flex items-center justify-center font-bold text-xl mx-auto shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                      ∞
+                    </div>
+                    <span className="text-xs font-bold text-emerald-400 block">Self-Sustaining Operations</span>
+                    <p className="text-[10px] text-slate-500">Your revenues are currently covering all operational outflows.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 w-full">
+                    <div className="text-3xl font-extrabold text-amber-400 font-mono">
+                      {runwayMonths.toFixed(1)} <span className="text-xs font-sans text-slate-400">Months</span>
+                    </div>
+                    {/* Visual Progress Bar */}
+                    <div className="w-full bg-slate-800 rounded-full h-1.5 mt-2">
+                      <div 
+                        className={`h-1.5 rounded-full ${runwayMonths > 12 ? "bg-emerald-500" : runwayMonths > 6 ? "bg-amber-500" : "bg-red-500 animate-pulse"}`} 
+                        style={{ width: `${Math.min(100, (runwayMonths / 24) * 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-semibold block mt-1">
+                      {runwayMonths > 12 ? "Safe Capital reserves" : runwayMonths > 6 ? "Watchful Capital Buffer" : "Critical Burn Buffer (Action Needed)"}
+                    </span>
+                  </div>
+                )}
+              </div>
             </Card>
           </div>
 

@@ -61,6 +61,57 @@ export default function SimulationLab() {
     setResults(runBusinessSimulation(defaults));
   };
 
+  const applyScenarioPreset = (preset: string) => {
+    let newInputs: SimulationInput;
+    if (preset === "chip-shortage") {
+      newInputs = {
+        priceChange: 15,
+        hireCount: 0,
+        inventoryChange: -35,
+        marketingBudget: -10,
+        openBranch: false,
+        increaseSalaries: 0,
+        reduceDiscounts: true,
+        switchSuppliers: true
+      };
+    } else if (preset === "aggressive-expansion") {
+      newInputs = {
+        priceChange: 5,
+        hireCount: 8,
+        inventoryChange: 20,
+        marketingBudget: 45,
+        openBranch: true,
+        increaseSalaries: 15,
+        reduceDiscounts: false,
+        switchSuppliers: false
+      };
+    } else if (preset === "recession") {
+      newInputs = {
+        priceChange: -10,
+        hireCount: 0,
+        inventoryChange: -15,
+        marketingBudget: -30,
+        openBranch: false,
+        increaseSalaries: 0,
+        reduceDiscounts: false,
+        switchSuppliers: true
+      };
+    } else { // streamlining
+      newInputs = {
+        priceChange: 0,
+        hireCount: 2,
+        inventoryChange: 10,
+        marketingBudget: 15,
+        openBranch: false,
+        increaseSalaries: 5,
+        reduceDiscounts: true,
+        switchSuppliers: true
+      };
+    }
+    setInputs(newInputs);
+    setResults(runBusinessSimulation(newInputs));
+  };
+
   // Build simulated monthly projection dataset for the line chart
   const getChartData = () => {
     if (!results) return initialFinance;
@@ -112,6 +163,48 @@ export default function SimulationLab() {
             Run AI Simulation
           </Button>
         </div>
+      </div>
+
+      {/* Scenario Presets Quick-Deck */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          {
+            id: "chip-shortage",
+            name: "Global Chip Shortage",
+            description: "Inventory drops, supplier pricing spikes, and core margins squeeze.",
+            color: "border-red-500/20 text-red-400 bg-red-950/10 hover:bg-red-950/20"
+          },
+          {
+            id: "aggressive-expansion",
+            name: "Aggressive Expansion",
+            description: "Aggressive hiring, branches opening, and scaling marketing budget.",
+            color: "border-purple-500/20 text-purple-400 bg-purple-950/10 hover:bg-purple-950/20"
+          },
+          {
+            id: "recession",
+            name: "Recession Freeze",
+            description: "Price cutting, hiring freeze, and reducing overhead margins.",
+            color: "border-amber-500/20 text-amber-400 bg-amber-950/10 hover:bg-amber-950/20"
+          },
+          {
+            id: "streamlining",
+            name: "Streamline Operations",
+            description: "Optimized hires, supplier switching, and discount minimization.",
+            color: "border-emerald-500/20 text-emerald-400 bg-emerald-950/10 hover:bg-emerald-950/20"
+          }
+        ].map((preset) => (
+          <Card 
+            key={preset.id} 
+            onClick={() => applyScenarioPreset(preset.id)}
+            className={`border cursor-pointer transition-all duration-200 p-4 flex flex-col justify-between hover:scale-[1.02] shadow-[0_4px_12px_rgba(0,0,0,0.1)] rounded-2xl ${preset.color}`}
+          >
+            <div>
+              <h4 className="text-xs font-extrabold uppercase tracking-wider">{preset.name}</h4>
+              <p className="text-[10px] text-slate-400 leading-normal mt-1">{preset.description}</p>
+            </div>
+            <span className="text-[9px] font-bold mt-3 block text-right uppercase tracking-widest opacity-85">Apply Preset →</span>
+          </Card>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
