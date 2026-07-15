@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Settings, User, Shield, AlertTriangle, Key, 
   Database, RefreshCw, CheckCircle2, Save, Terminal,
-  Link2, CloudLightning, FileSpreadsheet, Upload, CheckCircle, Play, Trash2
+  Link2, CloudLightning, FileSpreadsheet, Upload, CheckCircle, Play, Trash2, CreditCard
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import { auth, db } from "@/lib/firebase";
 import { doc, setDoc, getDocs, collection, deleteDoc } from "firebase/firestore";
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "csv" | "firebase">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "csv" | "firebase" | "billing">("profile");
 
   // Profile configuration states
   const [profileName, setProfileName] = useState("Vishal Surishetty");
@@ -462,6 +462,16 @@ export default function SettingsPage() {
           >
             <Database size={14} /> Firebase Integration
           </button>
+          <button
+            onClick={() => setActiveTab("billing")}
+            className={`w-full text-left px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer ${
+              activeTab === "billing" 
+                ? "bg-blue-600/10 text-blue-400 border border-blue-500/20" 
+                : "text-slate-400 hover:text-white border border-transparent"
+            }`}
+          >
+            <CreditCard size={14} /> Subscription Plans
+          </button>
         </Card>
 
         {/* Tab Views Panel */}
@@ -867,6 +877,80 @@ export default function SettingsPage() {
                 )}
               </div>
             </Card>
+          )}
+
+          {/* TAB 5: BILLING & SUBSCRIPTIONS */}
+          {activeTab === "billing" && (
+            <div className="space-y-6 animate-fadeIn">
+              <Card className="border-white/5 bg-slate-950/60 p-6 space-y-6">
+                <div>
+                  <h3 className="text-sm font-bold text-white uppercase tracking-wider border-b border-white/5 pb-2 flex items-center gap-2">
+                    <CreditCard className="text-blue-500" size={16} /> Subscription Management
+                  </h3>
+                  <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+                    Review TwinIQ pricing structures and license plans. Select a package to customize active billing models.
+                  </p>
+                </div>
+
+                {/* Pricing Cards */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  {[
+                    {
+                      name: "Starter Tier",
+                      price: "$99",
+                      desc: "Perfect for seed startups testing operations.",
+                      features: ["10 Topology Nodes", "Manual Sandbox Sliders", "Standard Email Alerts"],
+                      color: "border-slate-800 bg-slate-900/10 text-slate-300"
+                    },
+                    {
+                      name: "Professional Tier",
+                      price: "$299",
+                      desc: "Ideal for growing SMEs and scaling COOs.",
+                      features: ["50 Topology Nodes", "Cloud Firestore Real-time Sync", "WhatsApp Outreach Tools", "Gemini AI Copilot Chat"],
+                      color: "border-blue-500/20 bg-blue-950/10 text-blue-300",
+                      badge: "Most Popular"
+                    },
+                    {
+                      name: "Enterprise Tier",
+                      price: "Custom",
+                      desc: "Built for massive global MNC corporations.",
+                      features: ["Unlimited Nodes", "Universal Schema Rebranding", "Dedicated Uptime SLA", "Direct SAP/Salesforce API integrations"],
+                      color: "border-purple-500/20 bg-purple-950/10 text-purple-300"
+                    }
+                  ].map((tier, idx) => (
+                    <div key={idx} className={`border rounded-2xl p-4 flex flex-col justify-between relative min-h-[280px] ${tier.color}`}>
+                      {tier.badge && (
+                        <span className="absolute -top-2 right-4 bg-blue-600 text-white text-[8px] font-bold uppercase px-2 py-0.5 rounded-full">
+                          {tier.badge}
+                        </span>
+                      )}
+                      <div>
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-white">{tier.name}</h4>
+                        <div className="text-2xl font-black text-white mt-1.5">{tier.price} <span className="text-[10px] text-slate-500 font-medium">/mo</span></div>
+                        <p className="text-[9px] text-slate-400 mt-2 leading-relaxed">{tier.desc}</p>
+                        
+                        <ul className="mt-4 space-y-1.5 text-[9px] text-slate-400">
+                          {tier.features.map((f, fIdx) => (
+                            <li key={fIdx} className="flex items-center gap-1.5">
+                              <span className="text-emerald-500 font-bold">✓</span> {f}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <Button 
+                        variant={tier.badge ? "primary" : "outline"} 
+                        size="sm" 
+                        onClick={() => alert(`Redirecting to payment checkout portal for ${tier.name}...`)}
+                        className="w-full text-[9px] py-1.5 h-auto rounded-xl mt-4 cursor-pointer"
+                      >
+                        Subscribe
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
           )}
         </div>
       </div>
