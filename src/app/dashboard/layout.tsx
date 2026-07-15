@@ -128,8 +128,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         <div>
           {/* Logo Brand area */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-white/5">
-            <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden">
+          <div className={`h-16 flex items-center border-b border-white/5 relative ${
+            collapsed ? "justify-center px-2" : "justify-between px-4"
+          }`}>
+            <Link href="/dashboard" className="flex items-center gap-2 overflow-hidden shrink-0">
               <span className="w-8 h-8 shrink-0 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center font-extrabold text-white text-lg shadow-[0_0_15px_rgba(99,102,241,0.5)]">
                 Ω
               </span>
@@ -142,9 +144,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             
             <button 
               onClick={() => setCollapsed(!collapsed)} 
-              className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800/40 hidden md:block"
+              className={`text-slate-400 hover:text-white rounded-full bg-slate-950 border border-white/10 flex items-center justify-center hover:bg-slate-900 transition-all shadow-md z-50 cursor-pointer hidden md:flex ${
+                collapsed 
+                  ? "absolute -right-3 top-5 w-6 h-6" 
+                  : "w-6 h-6 p-0"
+              }`}
             >
-              {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+              {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
             </button>
           </div>
 
