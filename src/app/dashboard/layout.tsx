@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Network, PlayCircle, MessageSquare, Users, Database,
-  DollarSign, Activity, FileText, Settings, Sparkles, Menu, Bell, Search,
+  DollarSign, Activity, FileText, Settings, Sparkles, Menu, Bell,
   Power, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, X, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [collapsed, setCollapsed] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [alerts, setAlerts] = useState<BusinessEvent[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [timeStr, setTimeStr] = useState("11:47 AM");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarTerms, setSidebarTerms] = useState({
@@ -287,17 +286,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto relative z-10">
         {/* TOP BAR */}
         <header className="glass-navbar h-16 shrink-0 flex items-center justify-between px-6 sticky top-0 z-20">
-          {/* Left search */}
-          <div className="relative w-64 max-w-sm hidden md:block">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Search Twin model indexes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-4 py-1.5 bg-slate-900/50 border border-slate-800/80 rounded-full focus:outline-none focus:border-blue-500 text-xs text-slate-200"
-            />
-          </div>
+          {/* Left spacer for desktop flex layout */}
+          <div className="hidden md:block w-64" />
 
           <div className="md:hidden flex items-center gap-2">
             <button 
