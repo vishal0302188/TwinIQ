@@ -1,0 +1,16 @@
+customer,item,amount,channel,date,status
+Acme Corp (AI Tier),Enterprise AI Module,1500000,Bank Transfer,2026-07-12,Success
+Stripe India (Beta Tech),Premium Compute Node,820000,Razorpay,2026-07-11,Success
+Y-Combinator Cohort Partners,Custom LLM Fine-Tuning,1200000,Bank Transfer,2026-07-10,Success
+Zeta Payments (Scale Tier),Analytics Dashboard Bundle,680000,Razorpay,2026-07-09,Pending
+Razorpay Direct,Enterprise AI Module,550000,Bank Transfer,2026-07-08,Success
+CRED Tech Labs,Premium Compute Node,420000,Razorpay,2026-07-07,Failed
+Paytm PG Team,Custom LLM Fine-Tuning,1200000,Check,2026-07-06,Success
+Swiggy Engine Hub,Enterprise AI Module,880000,Bank Transfer,2026-07-05,Success
+Snapdeal Platform,Analytics Dashboard Bundle,450000,Razorpay,2026-07-04,Success
+Khatabook Devs,Custom API Integrations,250000,Cash,2026-07-03,Success
+Postman Inc,Enterprise AI Module,1500000,Bank Transfer,2026-07-02,Success
+Groww Engineering,Premium Compute Node,820000,Razorpay,2026-07-01,Success
+Zerodha Tech,Custom LLM Fine-Tuning,1200000,Bank Transfer,2026-06-28,Success
+Delhivery Ops,Analytics Dashboard Bundle,680000,Razorpay,2026-06-25,Success
+Urban Company,Enterprise AI Module,550000,Bank Transfer,2026-06-24,Success

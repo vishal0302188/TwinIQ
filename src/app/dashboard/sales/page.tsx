@@ -91,6 +91,111 @@ export default function SalesPage() {
     }
   };
 
+  // CSV Upload handler
+  const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      try {
+        const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+        if (lines.length <= 1) {
+          alert("CSV is empty or missing headers");
+          return;
+        }
+
+        // Header check: customer, item, amount, channel, date, status
+        const headers = lines[0].toLowerCase().split(",");
+        const customerIdx = headers.indexOf("customer");
+        const itemIdx = headers.indexOf("item");
+        const amountIdx = headers.indexOf("amount");
+        const channelIdx = headers.indexOf("channel");
+        const dateIdx = headers.indexOf("date");
+        const statusIdx = headers.indexOf("status");
+
+        if (customerIdx === -1 || itemIdx === -1 || amountIdx === -1 || channelIdx === -1 || dateIdx === -1 || statusIdx === -1) {
+          alert("CSV headers must contain: customer, item, amount, channel, date, status");
+          return;
+        }
+
+        const newSales: Sale[] = [];
+        let successAmountSum = 0;
+
+        for (let i = 1; i < lines.length; i++) {
+          const cols = lines[i].split(",");
+          if (cols.length < headers.length) continue;
+
+          const rawCustomer = cols[customerIdx].replace(/"/g, "").trim();
+          const rawItem = cols[itemIdx].replace(/"/g, "").trim();
+          const rawAmount = Number(cols[amountIdx].replace(/"/g, "").trim());
+          const rawChannel = cols[channelIdx].replace(/"/g, "").trim() as any;
+          const rawDate = cols[dateIdx].replace(/"/g, "").trim();
+          const rawStatus = cols[statusIdx].replace(/"/g, "").trim() as any;
+
+          if (!rawCustomer || !rawItem || isNaN(rawAmount) || !rawDate) continue;
+
+          const generatedId = `sale-${Math.floor(800 + Math.random() * 200)}-${Date.now().toString().slice(-4)}`;
+          const sale: Sale = {
+            id: generatedId,
+            customer: rawCustomer,
+            item: rawItem,
+            amount: rawAmount,
+            channel: ["Razorpay", "Cash", "Bank Transfer", "Check"].includes(rawChannel) ? rawChannel : "Cash",
+            date: rawDate,
+            status: ["Success", "Pending", "Failed"].includes(rawStatus) ? rawStatus : "Success"
+          };
+
+          newSales.push(sale);
+          if (sale.status === "Success") {
+            successAmountSum += sale.amount;
+          }
+        }
+
+        if (newSales.length === 0) {
+          alert("No valid sale rows found in CSV.");
+          return;
+        }
+
+        // Save to Database
+        if (db) {
+          localStorage.removeItem("twiniq_clear_fallback");
+          for (const sale of newSales) {
+            await setDoc(doc(db, "sales", sale.id), sale);
+          }
+
+          // If there are successful sales, credit them to monthly net revenue
+          if (successAmountSum > 0) {
+            const finSnap = await getDocs(collection(db, "finance"));
+            if (!finSnap.empty) {
+              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
+              const latestData = latestDoc.data();
+              await setDoc(doc(db, "finance", latestDoc.id), {
+                ...latestData,
+                revenue: Number(latestData.revenue || 0) + successAmountSum,
+                profit: Number(latestData.profit || 0) + Math.round(successAmountSum * 0.31)
+              });
+            }
+          }
+        }
+
+        const updatedList = [...newSales, ...sales];
+        setSales(updatedList);
+        syncCache(updatedList);
+
+        alert(`Successfully imported ${newSales.length} sales logs from CSV!`);
+        window.location.reload();
+      } catch (err: any) {
+        console.error("CSV import error:", err);
+        alert("Failed to parse CSV file: " + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+
   // Log sale record manually
   const handleAddSale = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -351,6 +456,17 @@ export default function SalesPage() {
                     Clear All Logs
                   </Button>
                 )}
+                
+                <label className="border border-white/10 bg-slate-900 hover:bg-slate-800 text-slate-300 text-[10px] px-3 py-1.5 h-auto rounded-xl cursor-pointer font-bold transition flex items-center gap-1.5 shrink-0">
+                  <FileText size={12} className="text-blue-400" /> Upload CSV
+                  <input 
+                    type="file" 
+                    accept=".csv" 
+                    onChange={handleCSVUpload} 
+                    className="hidden" 
+                  />
+                </label>
+
                 <div className="relative max-w-xs w-full">
                   <Search size={14} className="absolute left-3 top-2.5 text-slate-500" />
                   <input
