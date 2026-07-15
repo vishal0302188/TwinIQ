@@ -161,6 +161,7 @@ export default function LandingPage() {
             <button onClick={() => scrollToSection("how-it-works")} className="hover:text-white transition-colors cursor-pointer">How it Works</button>
             <button onClick={() => scrollToSection("features")} className="hover:text-white transition-colors cursor-pointer">Features</button>
             <button onClick={() => scrollToSection("interactive-demo")} className="hover:text-white transition-colors cursor-pointer">Live Demo</button>
+            <button onClick={() => scrollToSection("pricing")} className="hover:text-white transition-colors cursor-pointer">Pricing</button>
             <button onClick={() => scrollToSection("testimonials")} className="hover:text-white transition-colors cursor-pointer">Reviews</button>
           </nav>
 
@@ -186,6 +187,7 @@ export default function LandingPage() {
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("how-it-works"); }} className="text-left text-lg text-slate-300">How it works</button>
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("features"); }} className="text-left text-lg text-slate-300">Features</button>
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("interactive-demo"); }} className="text-left text-lg text-slate-300">Interactive Demo</button>
+          <button onClick={() => { setMobileMenuOpen(false); scrollToSection("pricing"); }} className="text-left text-lg text-slate-300">Pricing</button>
           <button onClick={() => { setMobileMenuOpen(false); scrollToSection("testimonials"); }} className="text-left text-lg text-slate-300">Testimonials</button>
           <div className="flex flex-col gap-4 mt-6">
             <Link href="/auth?signup=true" onClick={() => setMobileMenuOpen(false)}>
@@ -381,6 +383,77 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-24 max-w-7xl mx-auto px-6 border-t border-white/5 relative z-10">
+        <div className="text-center mb-16">
+          <h2 className="text-xs uppercase tracking-widest text-blue-500 font-bold mb-3">Pricing Packages</h2>
+          <p className="text-3xl md:text-5xl font-bold text-white tracking-tight">Flexible Scaling Options</p>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-8">
+          {[
+            {
+              name: "Starter Plan",
+              price: "₹8,000",
+              usd: "$99",
+              desc: "Perfect for seed startups testing operational twins.",
+              features: ["10 Topology Nodes", "Manual Sandbox Sliders", "Standard Email Alerts"],
+              color: "border-white/5 bg-navy-900/10 text-slate-300"
+            },
+            {
+              name: "Professional Plan",
+              price: "₹25,000",
+              usd: "$299",
+              desc: "Ideal for growing SMEs and scaling COOs.",
+              features: ["50 Topology Nodes", "Cloud Firestore Real-time Sync", "WhatsApp Outreach Tools", "Gemini AI Copilot Chat"],
+              color: "border-blue-500/25 bg-blue-950/10 text-blue-300",
+              badge: "Most Popular"
+            },
+            {
+              name: "Enterprise Plan",
+              price: "Custom",
+              usd: "Quote",
+              desc: "Built for massive global MNC corporations.",
+              features: ["Unlimited Nodes", "Universal Schema Rebranding", "Dedicated Uptime SLA", "Direct SAP/Salesforce API integrations"],
+              color: "border-purple-500/25 bg-purple-950/10 text-purple-300"
+            }
+          ].map((tier, idx) => (
+            <div key={idx} className={`glass-panel p-8 rounded-3xl border flex flex-col justify-between relative min-h-[360px] hover:scale-[1.02] transition-transform duration-200 ${tier.color}`}>
+              {tier.badge && (
+                <span className="absolute -top-3 right-6 bg-blue-600 text-white text-[9px] font-extrabold uppercase px-3 py-1 rounded-full tracking-wider shadow-[0_0_10px_rgba(37,99,235,0.4)]">
+                  {tier.badge}
+                </span>
+              )}
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-2">{tier.name}</h4>
+                <div className="text-3xl font-black text-white flex items-baseline gap-1.5 mt-2">
+                  {tier.price} 
+                  {tier.price !== "Custom" && <span className="text-xs text-slate-500 font-medium">/mo ({tier.usd})</span>}
+                </div>
+                <p className="text-xs text-slate-400 mt-4 leading-relaxed">{tier.desc}</p>
+                
+                <ul className="mt-6 space-y-2.5 text-xs text-slate-400">
+                  {tier.features.map((f, fIdx) => (
+                    <li key={fIdx} className="flex items-center gap-2">
+                      <span className="text-emerald-400 font-bold">✓</span> {f}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <Link href="/auth">
+                <Button 
+                  variant={tier.badge ? "primary" : "outline"} 
+                  className="w-full rounded-full text-xs font-bold py-2 mt-6 cursor-pointer"
+                >
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          ))}
         </div>
       </section>
 
