@@ -354,9 +354,9 @@ export default function SalesPage() {
           <p>Loading transaction journals...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT COLUMN: MANUAL LOG FORM */}
-          <Card className="lg:col-span-4 border-white/5 bg-slate-950/60 shadow-lg flex flex-col justify-between">
+          <Card className="lg:col-span-4 border-white/5 bg-slate-950/60 shadow-lg">
             <CardHeader className="pb-3 border-b border-white/5">
               <CardTitle className="text-md font-bold flex items-center gap-1.5">
                 <Sliders size={16} className="text-blue-500" /> Log Transaction
