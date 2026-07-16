@@ -23,10 +23,42 @@ export default function DigitalTwinPage() {
 
   useEffect(() => {
     setNodes(initialNodes);
-    // Auto-select the central business node on load to populate details
-    const central = initialNodes.find(n => n.id === "business");
-    if (central) setSelectedNode(central);
+    
+    // Check initial search parameter on mount
+    let initialSelect = initialNodes.find(n => n.id === "business");
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const highlight = params.get("highlight");
+      if (highlight) {
+        const matched = initialNodes.find(n => n.id === highlight);
+        if (matched) initialSelect = matched;
+      }
+    }
+    if (initialSelect) setSelectedNode(initialSelect);
   }, []);
+
+  // Listen to search parameter updates in real-time
+  useEffect(() => {
+    if (typeof window !== "undefined" && nodes.length > 0) {
+      const checkHighlight = () => {
+        const params = new URLSearchParams(window.location.search);
+        const highlight = params.get("highlight");
+        if (highlight) {
+          const matched = nodes.find(n => n.id === highlight);
+          if (matched && (!selectedNode || selectedNode.id !== highlight)) {
+            setSelectedNode(matched);
+          }
+        }
+      };
+      
+      const interval = setInterval(checkHighlight, 300);
+      window.addEventListener("popstate", checkHighlight);
+      return () => {
+        clearInterval(interval);
+        window.removeEventListener("popstate", checkHighlight);
+      };
+    }
+  }, [nodes, selectedNode]);
 
   // Sync sliders when selectedNode changes
   useEffect(() => {
