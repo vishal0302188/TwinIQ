@@ -372,16 +372,30 @@ export default function SalesPage() {
     if (!confirm("WARNING: Are you sure you want to delete ALL sales logs from the database? This cannot be undone.")) return;
     try {
       if (db) {
+        // 1. Clear sales collection
         const querySnapshot = await getDocs(collection(db, "sales"));
         for (const docSnap of querySnapshot.docs) {
           await deleteDoc(doc(db, "sales", docSnap.id));
         }
+
+        // 2. Reset finance collection to baseline
+        const finSnap = await getDocs(collection(db, "finance"));
+        for (const docSnap of finSnap.docs) {
+          await deleteDoc(doc(db, "finance", docSnap.id));
+        }
+        for (const item of initialFinance) {
+          await setDoc(doc(db, "finance", item.month), item);
+        }
       }
+
+      // 3. Clear local caches
       if (typeof window !== "undefined") {
         localStorage.removeItem("twiniq_mock_sales");
+        localStorage.setItem("twiniq_mock_finance", JSON.stringify(initialFinance));
       }
+
       setSales([]);
-      alert("All sales log overrides deleted successfully!");
+      alert("All sales logs cleared and finance metrics reset to baseline successfully!");
       window.location.reload();
     } catch (err: any) {
       console.error("Failed to delete all sales logs:", err);
