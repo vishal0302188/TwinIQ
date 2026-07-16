@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
+import { initialFinance, FinanceRecord } from "@/lib/mockData";
 
 interface Sale {
   id: string;
@@ -91,6 +92,86 @@ export default function SalesPage() {
     }
   };
 
+  // Helper to synchronize finance records with new transaction logs
+  const updateFinanceData = async (newSalesList: Sale[]) => {
+    const monthSums: Record<string, number> = {};
+    const getMonthAbbr = (dateStr: string): string => {
+      try {
+        const parts = dateStr.split("-");
+        const monthNum = parseInt(parts[1], 10);
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return months[monthNum - 1] || "Jun";
+      } catch (e) {
+        return "Jun";
+      }
+    };
+
+    for (const s of newSalesList) {
+      if (s.status === "Success") {
+        const m = getMonthAbbr(s.date);
+        monthSums[m] = (monthSums[m] || 0) + s.amount;
+      }
+    }
+
+    if (Object.keys(monthSums).length === 0) return;
+
+    let currentFinance: FinanceRecord[] = [];
+    if (db) {
+      try {
+        const querySnapshot = await getDocs(collection(db, "finance"));
+        if (!querySnapshot.empty) {
+          querySnapshot.forEach((docSnap) => {
+            currentFinance.push(docSnap.data() as FinanceRecord);
+          });
+        }
+      } catch (e) {
+        console.error("Error reading finance:", e);
+      }
+    }
+
+    if (currentFinance.length === 0) {
+      if (typeof window !== "undefined") {
+        const cachedFin = localStorage.getItem("twiniq_mock_finance");
+        currentFinance = cachedFin ? JSON.parse(cachedFin) : [...initialFinance];
+      } else {
+        currentFinance = [...initialFinance];
+      }
+    }
+
+    for (const [m, amt] of Object.entries(monthSums)) {
+      let monthRec = currentFinance.find(f => f.month === m);
+      if (monthRec) {
+        monthRec.revenue = Number(monthRec.revenue || 0) + amt;
+        monthRec.profit = Number(monthRec.profit || 0) + Math.round(amt * 0.31);
+        monthRec.cashFlow = Number(monthRec.cashFlow || 0) + amt;
+      } else {
+        const prevCash = currentFinance.length > 0 ? currentFinance[currentFinance.length - 1].cashFlow : 5210000;
+        monthRec = {
+          month: m,
+          revenue: amt,
+          expenses: 0,
+          profit: Math.round(amt * 0.31),
+          cashFlow: prevCash + amt
+        };
+        currentFinance.push(monthRec);
+      }
+
+      if (db) {
+        try {
+          await setDoc(doc(db, "finance", m), monthRec);
+        } catch (e) {
+          console.error("Failed to update doc in firestore:", e);
+        }
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      currentFinance.sort((a, b) => monthsOrder.indexOf(a.month) - monthsOrder.indexOf(b.month));
+      localStorage.setItem("twiniq_mock_finance", JSON.stringify(currentFinance));
+    }
+  };
+
   // CSV Upload handler
   const handleCSVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -109,7 +190,7 @@ export default function SalesPage() {
         }
 
         // Header check: customer, item, amount, channel, date, status
-        const headers = lines[0].toLowerCase().split(",");
+        const headers = lines[0].toLowerCase().split(",").map(h => h.trim());
         const customerIdx = headers.indexOf("customer");
         const itemIdx = headers.indexOf("item");
         const amountIdx = headers.indexOf("amount");
@@ -166,21 +247,10 @@ export default function SalesPage() {
           for (const sale of newSales) {
             await setDoc(doc(db, "sales", sale.id), sale);
           }
-
-          // If there are successful sales, credit them to monthly net revenue
-          if (successAmountSum > 0) {
-            const finSnap = await getDocs(collection(db, "finance"));
-            if (!finSnap.empty) {
-              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-              const latestData = latestDoc.data();
-              await setDoc(doc(db, "finance", latestDoc.id), {
-                ...latestData,
-                revenue: Number(latestData.revenue || 0) + successAmountSum,
-                profit: Number(latestData.profit || 0) + Math.round(successAmountSum * 0.31)
-              });
-            }
-          }
         }
+
+        // Synchronize and update the dynamic monthly finance records
+        await updateFinanceData(newSales);
 
         const updatedList = [...newSales, ...sales];
         setSales(updatedList);
@@ -220,21 +290,10 @@ export default function SalesPage() {
     try {
       if (db) {
         await setDoc(doc(db, "sales", generatedId), newSale);
-        
-        // If it's a successful sale, credit the cash directly to monthly net revenue
-        if (status === "Success") {
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              revenue: Number(latestData.revenue || 0) + newSale.amount,
-              profit: Number(latestData.profit || 0) + Math.round(newSale.amount * 0.31)
-            });
-          }
-        }
       }
+      
+      // Synchronize and update the dynamic monthly finance records
+      await updateFinanceData([newSale]);
       
       const updatedList = [newSale, ...sales];
       setSales(updatedList);
@@ -265,20 +324,15 @@ export default function SalesPage() {
     try {
       if (db) {
         await deleteDoc(doc(db, "sales", saleItem.id));
-        
-        // Deduct from finance stats if it was a successful sale
-        if (saleItem.status === "Success") {
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              revenue: Math.max(0, Number(latestData.revenue || 0) - saleItem.amount),
-              profit: Math.max(0, Number(latestData.profit || 0) - Math.round(saleItem.amount * 0.31))
-            });
-          }
-        }
+      }
+      
+      // Deduct from finance stats if it was a successful sale
+      if (saleItem.status === "Success") {
+        const negatedSale = {
+          ...saleItem,
+          amount: -saleItem.amount
+        };
+        await updateFinanceData([negatedSale]);
       }
 
       // Cleanup local cache if present

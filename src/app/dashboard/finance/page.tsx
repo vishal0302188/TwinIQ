@@ -163,7 +163,8 @@ export default function FinancePage() {
         if (isCleared) {
           setFinRecords([]);
         } else {
-          setFinRecords(initialFinance);
+          const cachedFin = localStorage.getItem("twiniq_mock_finance");
+          setFinRecords(cachedFin ? JSON.parse(cachedFin) : initialFinance);
         }
       } else {
         setInvoices(initialInvoices);

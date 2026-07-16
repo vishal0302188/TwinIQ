@@ -202,6 +202,9 @@ export default function SettingsPage() {
       for (const item of employees) {
         await setDoc(doc(db, "employees", item.id), item);
       }
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_finance", JSON.stringify(finance));
+      }
 
       setSeeded(true);
     } catch (err: any) {
@@ -273,6 +276,7 @@ export default function SettingsPage() {
       localStorage.removeItem("twiniq_bills_cleared");
       localStorage.removeItem("twiniq_sales_cleared");
       localStorage.removeItem("twiniq_extra_revenue");
+      localStorage.removeItem("twiniq_mock_finance");
       
       setSeeded(false);
       alert("All twin database collections and local caches cleared successfully!");

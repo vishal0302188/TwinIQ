@@ -36,6 +36,12 @@ export default function MainDashboard() {
       const { customers: mockCustomers, inventory: mockInventory, employees: mockEmployees, finance: mockFinance } = getMockData(activeTemplate);
 
       let dbFinance = isCleared ? [] : mockFinance;
+      if (typeof window !== "undefined") {
+        const cachedFin = localStorage.getItem("twiniq_mock_finance");
+        if (cachedFin) {
+          dbFinance = JSON.parse(cachedFin);
+        }
+      }
       let dbInventory = isCleared ? [] : mockInventory;
       let dbCustomers = isCleared ? [] : mockCustomers;
       let dbEmployees = isCleared ? [] : mockEmployees;
