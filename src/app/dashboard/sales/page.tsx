@@ -204,7 +204,7 @@ export default function SalesPage() {
         }
 
         const newSales: Sale[] = [];
-        let successAmountSum = 0;
+        let duplicateCount = 0;
 
         for (let i = 1; i < lines.length; i++) {
           const cols = lines[i].split(",");
@@ -219,7 +219,11 @@ export default function SalesPage() {
 
           if (!rawCustomer || !rawItem || isNaN(rawAmount) || !rawDate) continue;
 
-          const generatedId = `sale-${Math.floor(800 + Math.random() * 200)}-${Date.now().toString().slice(-4)}`;
+          // Generate a deterministic ID based on row data to prevent duplicates
+          const slug = `${rawCustomer}-${rawItem}-${rawAmount}-${rawDate}-${rawChannel}`;
+          const cleanSlug = slug.toLowerCase().replace(/[^a-z0-9]/g, "-").slice(0, 80);
+          const generatedId = `sale-${cleanSlug}`;
+
           const sale: Sale = {
             id: generatedId,
             customer: rawCustomer,
@@ -230,14 +234,20 @@ export default function SalesPage() {
             status: ["Success", "Pending", "Failed"].includes(rawStatus) ? rawStatus : "Success"
           };
 
-          newSales.push(sale);
-          if (sale.status === "Success") {
-            successAmountSum += sale.amount;
+          // Check if this sale already exists in current page state or has already been added in this import session
+          const exists = sales.some(s => s.id === generatedId) || newSales.some(s => s.id === generatedId);
+          if (exists) {
+            duplicateCount++;
+          } else {
+            newSales.push(sale);
           }
         }
 
         if (newSales.length === 0) {
-          alert("No valid sale rows found in CSV.");
+          alert(duplicateCount > 0 
+            ? "All transactions in this CSV file have already been imported. No new records were added."
+            : "No valid transaction logs found in CSV."
+          );
           return;
         }
 
