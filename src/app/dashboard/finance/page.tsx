@@ -118,8 +118,20 @@ export default function FinancePage() {
               invData.push(docSnap.data() as Invoice);
             });
             setInvoices(invData);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("twiniq_mock_invoices", JSON.stringify(invData));
+            }
           } else {
-            setInvoices((isClearedFlag || isInvsCleared) ? [] : initialInvoices);
+            if (typeof window !== "undefined") {
+              const cachedInv = localStorage.getItem("twiniq_mock_invoices");
+              if (cachedInv) {
+                setInvoices(JSON.parse(cachedInv));
+              } else {
+                setInvoices((isClearedFlag || isInvsCleared) ? [] : initialInvoices);
+              }
+            } else {
+              setInvoices(initialInvoices);
+            }
           }
 
           // Load Payables (Supplier Payouts)
@@ -130,8 +142,20 @@ export default function FinancePage() {
               payData.push(docSnap.data() as Payout);
             });
             setPayouts(payData);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("twiniq_mock_payouts", JSON.stringify(payData));
+            }
           } else {
-            setPayouts((isClearedFlag || isBillsCleared) ? [] : initialPayouts);
+            if (typeof window !== "undefined") {
+              const cachedPay = localStorage.getItem("twiniq_mock_payouts");
+              if (cachedPay) {
+                setPayouts(JSON.parse(cachedPay));
+              } else {
+                setPayouts((isClearedFlag || isBillsCleared) ? [] : initialPayouts);
+              }
+            } else {
+              setPayouts(initialPayouts);
+            }
           }
           setLoading(false);
           return;

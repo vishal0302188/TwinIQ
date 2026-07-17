@@ -51,6 +51,9 @@ export default function InventoryPage() {
               data.push(docSnap.data() as InventoryItem);
             });
             setInventory(data);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("twiniq_mock_inventory", JSON.stringify(data));
+            }
             setLoading(false);
             return;
           }
@@ -58,12 +61,20 @@ export default function InventoryPage() {
       } catch (err) {
         console.error("Firestore inventory load error, using local fallback:", err);
       }
-      if (typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true") {
-        setInventory([]);
-      } else {
-        const activeTemplate = typeof window !== "undefined" ? localStorage.getItem("twiniq_business_template") || "saas" : "saas";
-        const { inventory: mockInventory } = getMockData(activeTemplate);
-        setInventory(mockInventory);
+      if (typeof window !== "undefined") {
+        const cachedInv = localStorage.getItem("twiniq_mock_inventory");
+        if (cachedInv) {
+          setInventory(JSON.parse(cachedInv));
+        } else {
+          const isCleared = localStorage.getItem("twiniq_clear_fallback") === "true";
+          if (isCleared) {
+            setInventory([]);
+          } else {
+            const activeTemplate = localStorage.getItem("twiniq_business_template") || "saas";
+            const { inventory: mockInventory } = getMockData(activeTemplate);
+            setInventory(mockInventory);
+          }
+        }
       }
       setLoading(false);
     }
@@ -83,6 +94,12 @@ export default function InventoryPage() {
     }
   }, [selectedItem]);
 
+  const syncLocalCache = (list: InventoryItem[]) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("twiniq_mock_inventory", JSON.stringify(list));
+    }
+  };
+
   const handleReorder = async (itemId: string) => {
     setReordered(itemId);
     try {
@@ -100,9 +117,9 @@ export default function InventoryPage() {
 
         const updatedItem = { ...target, stock: newStock, status: nextStatus as any };
 
-        setInventory((prev) =>
-          prev.map((item) => item.id === itemId ? updatedItem : item)
-        );
+        const updatedList = inventory.map((item) => item.id === itemId ? updatedItem : item);
+        setInventory(updatedList);
+        syncLocalCache(updatedList);
         
         setSelectedItem((prev) => prev && prev.id === itemId ? updatedItem : prev);
       }
@@ -137,7 +154,9 @@ export default function InventoryPage() {
       if (db) {
         await setDoc(doc(db, "inventory", generatedId), newItem);
       }
-      setInventory(prev => [newItem, ...prev]);
+      const updatedList = [newItem, ...inventory];
+      setInventory(updatedList);
+      syncLocalCache(updatedList);
       setNewSKUName("");
       setNewSKUSupplier("");
       setNewSKUStock(100);
@@ -173,7 +192,9 @@ export default function InventoryPage() {
       if (db) {
         await setDoc(doc(db, "inventory", selectedItem.id), updatedItem);
       }
-      setInventory(prev => prev.map(item => item.id === selectedItem.id ? updatedItem : item));
+      const updatedList = inventory.map(item => item.id === selectedItem.id ? updatedItem : item);
+      setInventory(updatedList);
+      syncLocalCache(updatedList);
       setSelectedItem(updatedItem);
       setIsEditing(false);
     } catch (err) {
@@ -193,7 +214,9 @@ export default function InventoryPage() {
       if (db) {
         await deleteDoc(doc(db, "inventory", selectedItem.id));
       }
-      setInventory(prev => prev.filter(item => item.id !== selectedItem.id));
+      const updatedList = inventory.filter(item => item.id !== selectedItem.id);
+      setInventory(updatedList);
+      syncLocalCache(updatedList);
       setSelectedItem(null);
       setIsEditing(false);
     } catch (err) {

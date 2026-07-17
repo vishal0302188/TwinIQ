@@ -51,6 +51,9 @@ export default function EmployeesPage() {
             });
             setEmployees(data);
             setSelectedEmp(data[0]);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("twiniq_mock_employees", JSON.stringify(data));
+            }
             setLoading(false);
             return;
           }
@@ -58,14 +61,24 @@ export default function EmployeesPage() {
       } catch (err) {
         console.error("Firestore employees load error, using local fallback:", err);
       }
-      if (typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true") {
-        setEmployees([]);
-        setSelectedEmp(null);
-      } else {
-        const activeTemplate = typeof window !== "undefined" ? localStorage.getItem("twiniq_business_template") || "saas" : "saas";
-        const { employees: mockEmployees } = getMockData(activeTemplate);
-        setEmployees(mockEmployees);
-        setSelectedEmp(mockEmployees[0] || null);
+      if (typeof window !== "undefined") {
+        const cachedEmp = localStorage.getItem("twiniq_mock_employees");
+        if (cachedEmp) {
+          const list = JSON.parse(cachedEmp) as Employee[];
+          setEmployees(list);
+          setSelectedEmp(list[0] || null);
+        } else {
+          const isCleared = localStorage.getItem("twiniq_clear_fallback") === "true";
+          if (isCleared) {
+            setEmployees([]);
+            setSelectedEmp(null);
+          } else {
+            const activeTemplate = localStorage.getItem("twiniq_business_template") || "saas";
+            const { employees: mockEmployees } = getMockData(activeTemplate);
+            setEmployees(mockEmployees);
+            setSelectedEmp(mockEmployees[0] || null);
+          }
+        }
       }
       setLoading(false);
     }
@@ -111,7 +124,11 @@ export default function EmployeesPage() {
       if (db) {
         await setDoc(doc(db, "employees", generatedId), newEmployee);
       }
-      setEmployees(prev => [newEmployee, ...prev]);
+      const updatedList = [newEmployee, ...employees];
+      setEmployees(updatedList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_employees", JSON.stringify(updatedList));
+      }
       setSelectedEmp(newEmployee);
       setNewEmpName("");
       setNewEmpRole("");
@@ -148,7 +165,11 @@ export default function EmployeesPage() {
       if (db) {
         await setDoc(doc(db, "employees", selectedEmp.id), updatedEmployee);
       }
-      setEmployees(prev => prev.map(emp => emp.id === selectedEmp.id ? updatedEmployee : emp));
+      const updatedList = employees.map(emp => emp.id === selectedEmp.id ? updatedEmployee : emp);
+      setEmployees(updatedList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_employees", JSON.stringify(updatedList));
+      }
       setSelectedEmp(updatedEmployee);
       setIsEditing(false);
     } catch (err) {
@@ -168,7 +189,11 @@ export default function EmployeesPage() {
       if (db) {
         await deleteDoc(doc(db, "employees", selectedEmp.id));
       }
-      setEmployees(prev => prev.filter(emp => emp.id !== selectedEmp.id));
+      const updatedList = employees.filter(emp => emp.id !== selectedEmp.id);
+      setEmployees(updatedList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_employees", JSON.stringify(updatedList));
+      }
       setSelectedEmp(null);
       setIsEditing(false);
     } catch (err) {
