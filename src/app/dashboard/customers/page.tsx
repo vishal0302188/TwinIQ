@@ -75,7 +75,7 @@ export default function CustomersPage() {
 
   useEffect(() => {
     async function loadData() {
-      // 1. Load Invoices
+      let dbLoadedInvoices = false;
       try {
         if (db) {
           const isCleared = typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true";
@@ -88,8 +88,17 @@ export default function CustomersPage() {
               invData.push(docSnap.data() as Invoice);
             });
             setInvoices(invData);
+            dbLoadedInvoices = true;
+            if (typeof window !== "undefined") {
+              localStorage.setItem("twiniq_mock_invoices", JSON.stringify(invData));
+            }
           } else {
-            setInvoices((isCleared || isInvsCleared) ? [] : initialInvoices);
+            const initialList = (isCleared || isInvsCleared) ? [] : initialInvoices;
+            setInvoices(initialList);
+            dbLoadedInvoices = true;
+            if (typeof window !== "undefined") {
+              localStorage.setItem("twiniq_mock_invoices", JSON.stringify(initialList));
+            }
           }
         }
       } catch (err) {
@@ -97,7 +106,7 @@ export default function CustomersPage() {
       }
 
       // Local storage fallback for invoices
-      if (typeof window !== "undefined") {
+      if (!dbLoadedInvoices && typeof window !== "undefined") {
         const isCleared = localStorage.getItem("twiniq_clear_fallback") === "true";
         const isInvsCleared = localStorage.getItem("twiniq_invoices_cleared") === "true";
         if (isCleared || isInvsCleared) {

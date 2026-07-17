@@ -25,6 +25,45 @@ const mockInvoices: Record<string, Invoice> = {
   "inv-2044": { id: "inv-2044", client: "Google Cloud", amount: 800000, status: "Pending", date: "2026-06-25" }
 };
 
+const syncInvoiceLocalData = (updatedInv: Invoice) => {
+  if (typeof window !== "undefined") {
+    // 1. Sync individual cache
+    localStorage.setItem(`twiniq_mock_inv_${updatedInv.id}`, JSON.stringify(updatedInv));
+    
+    // 2. Sync collection list cache
+    const cachedInvListStr = localStorage.getItem("twiniq_mock_invoices");
+    if (cachedInvListStr) {
+      try {
+        const cachedInvList = JSON.parse(cachedInvListStr) as Invoice[];
+        const updatedList = cachedInvList.map(inv => inv.id === updatedInv.id ? { ...inv, status: "Paid" as const } : inv);
+        localStorage.setItem("twiniq_mock_invoices", JSON.stringify(updatedList));
+      } catch (e) {
+        console.error("Local list sync failed:", e);
+      }
+    }
+
+    // 3. Sync finance cache (add invoice value to the latest month's revenue and profit)
+    const cachedFinStr = localStorage.getItem("twiniq_mock_finance");
+    if (cachedFinStr) {
+      try {
+        const cachedFin = JSON.parse(cachedFinStr) as any[];
+        if (cachedFin.length > 0) {
+          const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          cachedFin.sort((a, b) => monthsOrder.indexOf(a.month) - monthsOrder.indexOf(b.month));
+          
+          const latestIdx = cachedFin.length - 1;
+          cachedFin[latestIdx].revenue = Number(cachedFin[latestIdx].revenue || 0) + updatedInv.amount;
+          cachedFin[latestIdx].profit = Number(cachedFin[latestIdx].profit || 0) + Math.round(updatedInv.amount * 0.31);
+          
+          localStorage.setItem("twiniq_mock_finance", JSON.stringify(cachedFin));
+        }
+      } catch (e) {
+        console.error("Local finance sync failed:", e);
+      }
+    }
+  }
+};
+
 function PaymentForm() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id") || "";
@@ -114,6 +153,7 @@ function PaymentForm() {
             localStorage.setItem(`twiniq_mock_inv_${invoice.id}`, JSON.stringify(updatedInvoice));
           }
 
+          syncInvoiceLocalData(updatedInvoice);
           setInvoice(updatedInvoice);
           const generatedId = `pay_sim_${Math.random().toString(36).substring(2, 9)}`;
           setPayId(generatedId);
@@ -160,6 +200,7 @@ function PaymentForm() {
             }
           }
 
+          syncInvoiceLocalData(updatedInvoice);
           setInvoice(updatedInvoice);
           setPayId(response.razorpay_payment_id);
           setPaymentSuccess(true);
