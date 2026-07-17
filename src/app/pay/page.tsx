@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { formatCurrency } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore";
+import { initialFinance } from "@/lib/mockData";
 
 interface Invoice {
   id: string;
@@ -64,6 +65,31 @@ const syncInvoiceLocalData = (updatedInv: Invoice) => {
   }
 };
 
+const getLatestFinanceDoc = async () => {
+  if (!db) return null;
+  const finSnap = await getDocs(collection(db, "finance"));
+  let latestDoc;
+  let latestData;
+  if (finSnap.empty) {
+    for (const item of initialFinance) {
+      await setDoc(doc(db, "finance", item.month), item);
+    }
+    const refetched = await getDocs(collection(db, "finance"));
+    const sortedDocs = [...refetched.docs];
+    const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    sortedDocs.sort((a, b) => monthsOrder.indexOf(a.id) - monthsOrder.indexOf(b.id));
+    latestDoc = sortedDocs[sortedDocs.length - 1];
+    latestData = latestDoc.data();
+  } else {
+    const sortedDocs = [...finSnap.docs];
+    const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    sortedDocs.sort((a, b) => monthsOrder.indexOf(a.id) - monthsOrder.indexOf(b.id));
+    latestDoc = sortedDocs[sortedDocs.length - 1];
+    latestData = latestDoc.data();
+  }
+  return { id: latestDoc.id, data: latestData };
+};
+
 function PaymentForm() {
   const searchParams = useSearchParams();
   const id = searchParams.get("id") || "";
@@ -76,7 +102,7 @@ function PaymentForm() {
   const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    async function loadInvoice() {
+    async function fetchInvoice() {
       if (!id) {
         setLoading(false);
         return;
@@ -91,21 +117,22 @@ function PaymentForm() {
           }
         }
       } catch (err) {
-        console.error("Firestore read error, checking local mock data:", err);
+        console.error("Firestore read error:", err);
       }
-      
-      // Fallback to mock data or localStorage
-      const cached = typeof window !== "undefined" ? localStorage.getItem(`twiniq_mock_inv_${id}`) : null;
-      if (cached) {
-        setInvoice(JSON.parse(cached));
-      } else if (mockInvoices[id]) {
-        setInvoice(mockInvoices[id]);
+
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem(`twiniq_mock_inv_${id}`);
+        if (cached) {
+          setInvoice(JSON.parse(cached));
+        } else {
+          setInvoice(mockInvoices[id] || null);
+        }
       } else {
-        setErrorMsg("Invoice ID not found. Verify the payment link URL.");
+        setInvoice(mockInvoices[id] || null);
       }
       setLoading(false);
     }
-    loadInvoice();
+    fetchInvoice();
   }, [id]);
 
   const loadRazorpayScript = () => {
@@ -138,15 +165,12 @@ function PaymentForm() {
           
           if (db) {
             await setDoc(doc(db, "invoices", invoice.id), updatedInvoice);
-            // Optionally update revenue metrics inside database
-            const finSnap = await getDocs(collection(db, "finance"));
-            if (!finSnap.empty) {
-              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-              const latestData = latestDoc.data();
-              await setDoc(doc(db, "finance", latestDoc.id), {
-                ...latestData,
-                revenue: Number(latestData.revenue || 0) + invoice.amount,
-                profit: Number(latestData.profit || 0) + Math.round(invoice.amount * 0.31)
+            const res = await getLatestFinanceDoc();
+            if (res) {
+              await setDoc(doc(db, "finance", res.id), {
+                ...res.data,
+                revenue: Number(res.data.revenue || 0) + invoice.amount,
+                profit: Number(res.data.profit || 0) + Math.round(invoice.amount * 0.31)
               });
             }
           } else if (typeof window !== "undefined") {
@@ -188,14 +212,12 @@ function PaymentForm() {
           
           if (db) {
             await setDoc(doc(db, "invoices", invoice.id), updatedInvoice);
-            const finSnap = await getDocs(collection(db, "finance"));
-            if (!finSnap.empty) {
-              const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-              const latestData = latestDoc.data();
-              await setDoc(doc(db, "finance", latestDoc.id), {
-                ...latestData,
-                revenue: Number(latestData.revenue || 0) + invoice.amount,
-                profit: Number(latestData.profit || 0) + Math.round(invoice.amount * 0.31)
+            const res = await getLatestFinanceDoc();
+            if (res) {
+              await setDoc(doc(db, "finance", res.id), {
+                ...res.data,
+                revenue: Number(res.data.revenue || 0) + invoice.amount,
+                profit: Number(res.data.profit || 0) + Math.round(invoice.amount * 0.31)
               });
             }
           }

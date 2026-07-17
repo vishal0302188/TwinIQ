@@ -184,6 +184,31 @@ export default function FinancePage() {
     }
   };
 
+  const getLatestFinanceDoc = async () => {
+    if (!db) return null;
+    const finSnap = await getDocs(collection(db, "finance"));
+    let latestDoc;
+    let latestData;
+    if (finSnap.empty) {
+      for (const item of initialFinance) {
+        await setDoc(doc(db, "finance", item.month), item);
+      }
+      const refetched = await getDocs(collection(db, "finance"));
+      const sortedDocs = [...refetched.docs];
+      const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      sortedDocs.sort((a, b) => monthsOrder.indexOf(a.id) - monthsOrder.indexOf(b.id));
+      latestDoc = sortedDocs[sortedDocs.length - 1];
+      latestData = latestDoc.data();
+    } else {
+      const sortedDocs = [...finSnap.docs];
+      const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      sortedDocs.sort((a, b) => monthsOrder.indexOf(a.id) - monthsOrder.indexOf(b.id));
+      latestDoc = sortedDocs[sortedDocs.length - 1];
+      latestData = latestDoc.data();
+    }
+    return { id: latestDoc.id, data: latestData };
+  };
+
   // Add Client Invoice
   const handleAddInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,14 +235,12 @@ export default function FinancePage() {
       if (db) {
         await setDoc(doc(db, "invoices", generatedId), newInvoice);
         if (finalStatus === "Paid") {
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              revenue: Number(latestData.revenue || 0) + newInvoice.amount,
-              profit: Number(latestData.profit || 0) + Math.round(newInvoice.amount * 0.31)
+          const res = await getLatestFinanceDoc();
+          if (res) {
+            await setDoc(doc(db, "finance", res.id), {
+              ...res.data,
+              revenue: Number(res.data.revenue || 0) + newInvoice.amount,
+              profit: Number(res.data.profit || 0) + Math.round(newInvoice.amount * 0.31)
             });
           }
         }
@@ -279,14 +302,12 @@ export default function FinancePage() {
         await setDoc(doc(db, "invoices", selectedInvoice.id), updatedInvoice);
         // If status changed to Paid, credit the amount
         if (finalStatus === "Paid" && selectedInvoice.status !== "Paid") {
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              revenue: Number(latestData.revenue || 0) + updatedInvoice.amount,
-              profit: Number(latestData.profit || 0) + Math.round(updatedInvoice.amount * 0.31)
+          const res = await getLatestFinanceDoc();
+          if (res) {
+            await setDoc(doc(db, "finance", res.id), {
+              ...res.data,
+              revenue: Number(res.data.revenue || 0) + updatedInvoice.amount,
+              profit: Number(res.data.profit || 0) + Math.round(updatedInvoice.amount * 0.31)
             });
           }
         }
@@ -318,14 +339,12 @@ export default function FinancePage() {
         
         // If the invoice was paid, deduct it from finance stats
         if (invoiceItem.status === "Paid") {
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              revenue: Math.max(0, Number(latestData.revenue || 0) - invoiceItem.amount),
-              profit: Math.max(0, Number(latestData.profit || 0) - Math.round(invoiceItem.amount * 0.31))
+          const res = await getLatestFinanceDoc();
+          if (res) {
+            await setDoc(doc(db, "finance", res.id), {
+              ...res.data,
+              revenue: Math.max(0, Number(res.data.revenue || 0) - invoiceItem.amount),
+              profit: Math.max(0, Number(res.data.profit || 0) - Math.round(invoiceItem.amount * 0.31))
             });
           }
         }
@@ -429,14 +448,12 @@ export default function FinancePage() {
         
         // If the bill was paid, reverse the expenses deduction from finance stats
         if (payoutItem.status === "Paid") {
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              expenses: Math.max(0, Number(latestData.expenses || 0) - payoutItem.amount),
-              profit: Number(latestData.profit || 0) + payoutItem.amount
+          const res = await getLatestFinanceDoc();
+          if (res) {
+            await setDoc(doc(db, "finance", res.id), {
+              ...res.data,
+              expenses: Math.max(0, Number(res.data.expenses || 0) - payoutItem.amount),
+              profit: Number(res.data.profit || 0) + payoutItem.amount
             });
           }
         }
@@ -495,14 +512,12 @@ export default function FinancePage() {
         if (db) {
           await setDoc(doc(db, "payouts", selectedPayout.id), updatedPayout);
           // Recalculate expenditures & profit metrics inside dashboard collections
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              expenses: Number(latestData.expenses || 0) + selectedPayout.amount,
-              profit: Number(latestData.profit || 0) - selectedPayout.amount
+          const res = await getLatestFinanceDoc();
+          if (res) {
+            await setDoc(doc(db, "finance", res.id), {
+              ...res.data,
+              expenses: Number(res.data.expenses || 0) + selectedPayout.amount,
+              profit: Number(res.data.profit || 0) - selectedPayout.amount
             });
           }
         }

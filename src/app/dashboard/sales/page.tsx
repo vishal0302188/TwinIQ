@@ -155,13 +155,15 @@ export default function SalesPage() {
         };
         currentFinance.push(monthRec);
       }
+    }
 
-      if (db) {
-        try {
-          await setDoc(doc(db, "finance", m), monthRec);
-        } catch (e) {
-          console.error("Failed to update doc in firestore:", e);
+    if (db) {
+      try {
+        for (const item of currentFinance) {
+          await setDoc(doc(db, "finance", item.month), item);
         }
+      } catch (e) {
+        console.error("Failed to write finance records to firestore:", e);
       }
     }
 

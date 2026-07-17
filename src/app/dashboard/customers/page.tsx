@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { initialCustomers, Customer, getMockData } from "@/lib/mockData";
+import { initialCustomers, Customer, getMockData, initialFinance } from "@/lib/mockData";
 import { formatCurrency, getBusinessTerms } from "@/lib/utils";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
@@ -263,6 +263,31 @@ export default function CustomersPage() {
     }
   };
 
+  const getLatestFinanceDoc = async () => {
+    if (!db) return null;
+    const finSnap = await getDocs(collection(db, "finance"));
+    let latestDoc;
+    let latestData;
+    if (finSnap.empty) {
+      for (const item of initialFinance) {
+        await setDoc(doc(db, "finance", item.month), item);
+      }
+      const refetched = await getDocs(collection(db, "finance"));
+      const sortedDocs = [...refetched.docs];
+      const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      sortedDocs.sort((a, b) => monthsOrder.indexOf(a.id) - monthsOrder.indexOf(b.id));
+      latestDoc = sortedDocs[sortedDocs.length - 1];
+      latestData = latestDoc.data();
+    } else {
+      const sortedDocs = [...finSnap.docs];
+      const monthsOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      sortedDocs.sort((a, b) => monthsOrder.indexOf(a.id) - monthsOrder.indexOf(b.id));
+      latestDoc = sortedDocs[sortedDocs.length - 1];
+      latestData = latestDoc.data();
+    }
+    return { id: latestDoc.id, data: latestData };
+  };
+
   // Add Client Invoice
   const handleAddInvoice = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,14 +317,12 @@ export default function CustomersPage() {
       if (db) {
         await setDoc(doc(db, "invoices", generatedId), newInvoice);
         if (finalStatus === "Paid") {
-          const finSnap = await getDocs(collection(db, "finance"));
-          if (!finSnap.empty) {
-            const latestDoc = finSnap.docs[finSnap.docs.length - 1];
-            const latestData = latestDoc.data();
-            await setDoc(doc(db, "finance", latestDoc.id), {
-              ...latestData,
-              revenue: Number(latestData.revenue || 0) + newInvoice.amount,
-              profit: Number(latestData.profit || 0) + Math.round(newInvoice.amount * 0.31)
+          const res = await getLatestFinanceDoc();
+          if (res) {
+            await setDoc(doc(db, "finance", res.id), {
+              ...res.data,
+              revenue: Number(res.data.revenue || 0) + newInvoice.amount,
+              profit: Number(res.data.profit || 0) + Math.round(newInvoice.amount * 0.31)
             });
           }
         }
