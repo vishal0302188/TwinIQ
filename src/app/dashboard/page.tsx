@@ -31,20 +31,31 @@ export default function MainDashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const isCleared = typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true";
+      const isCleared = typeof window !== "undefined" && (
+        localStorage.getItem("twiniq_clear_fallback") === "true" ||
+        localStorage.getItem("twiniq_is_clean_slate") === "true"
+      );
       const activeTemplate = typeof window !== "undefined" ? localStorage.getItem("twiniq_business_template") || "saas" : "saas";
       const { customers: mockCustomers, inventory: mockInventory, employees: mockEmployees, finance: mockFinance } = getMockData(activeTemplate);
 
       let dbFinance = isCleared ? [] : mockFinance;
-      if (typeof window !== "undefined") {
-        const cachedFin = localStorage.getItem("twiniq_mock_finance");
-        if (cachedFin) {
-          dbFinance = JSON.parse(cachedFin);
-        }
-      }
       let dbInventory = isCleared ? [] : mockInventory;
       let dbCustomers = isCleared ? [] : mockCustomers;
       let dbEmployees = isCleared ? [] : mockEmployees;
+
+      if (typeof window !== "undefined") {
+        const cachedFin = localStorage.getItem("twiniq_mock_finance");
+        if (cachedFin) dbFinance = JSON.parse(cachedFin);
+
+        const cachedCust = localStorage.getItem("twiniq_mock_customers");
+        if (cachedCust) dbCustomers = JSON.parse(cachedCust);
+
+        const cachedEmp = localStorage.getItem("twiniq_mock_employees");
+        if (cachedEmp) dbEmployees = JSON.parse(cachedEmp);
+
+        const cachedInv = localStorage.getItem("twiniq_mock_inventory");
+        if (cachedInv) dbInventory = JSON.parse(cachedInv);
+      }
 
       if (db) {
         // Fetch Finance from Firestore
@@ -116,19 +127,35 @@ export default function MainDashboard() {
       
       // Calculate dynamic inventory health
       const lowStockCount = dbInventory.filter(item => item.status !== "In Stock").length;
-      const invHealthVal = isCleared ? 0 : (dbInventory.length > 0 ? Math.round(100 - (lowStockCount / dbInventory.length) * 100) : 100);
+      const hasInventory = dbInventory.length > 0;
+      const invHealthVal = hasInventory 
+        ? Math.round(100 - (lowStockCount / dbInventory.length) * 100)
+        : (isCleared ? 0 : 100);
 
       // Calculate dynamic customer satisfaction
       const avgChurn = dbCustomers.length > 0 ? dbCustomers.reduce((sum, c) => sum + c.churnRisk, 0) / dbCustomers.length : 0;
-      const custSatVal = isCleared ? "0.0" : (dbCustomers.length > 0 ? (100 - (avgChurn * 0.4)).toFixed(1) : "100.0");
+      const hasCustomers = dbCustomers.length > 0;
+      const custSatVal = hasCustomers
+        ? (100 - (avgChurn * 0.4)).toFixed(1)
+        : (isCleared ? "0.0" : "100.0");
 
       // Calculate dynamic employee metrics
-      const avgProd = isCleared ? 0 : (dbEmployees.length > 0 ? dbEmployees.reduce((sum, e) => sum + e.productivity, 0) / dbEmployees.length : 0);
+      const hasEmployees = dbEmployees.length > 0;
+      const avgProd = hasEmployees
+        ? Math.round(dbEmployees.reduce((sum, e) => sum + e.productivity, 0) / dbEmployees.length)
+        : (isCleared ? 0 : 89);
 
       // Dynamic scores (revert to 0 if cleared)
-      const revScore = isCleared ? 0 : (currentFin.revenue > 0 ? Math.min(100, Math.round((currentFin.revenue / 12400000) * 92)) : 92);
-      const profitScore = isCleared ? 0 : (currentFin.profit > 0 ? Math.min(100, Math.round((currentFin.profit / 3850000) * 87)) : 87);
-      const cashScore = isCleared ? 0 : (currentFin.cashFlow > 0 ? Math.min(100, Math.round((currentFin.cashFlow / 5000000) * 90)) : 90);
+      const hasFinance = dbFinance.length > 0;
+      const revScore = hasFinance
+        ? (currentFin.revenue > 0 ? Math.min(100, Math.round((currentFin.revenue / 12400000) * 92)) : 92)
+        : (isCleared ? 0 : 92);
+      const profitScore = hasFinance
+        ? (currentFin.profit > 0 ? Math.min(100, Math.round((currentFin.profit / 3850000) * 87)) : 87)
+        : (isCleared ? 0 : 87);
+      const cashScore = hasFinance
+        ? (currentFin.cashFlow > 0 ? Math.min(100, Math.round((currentFin.cashFlow / 5000000) * 90)) : 90)
+        : (isCleared ? 0 : 90);
 
       const terms = getBusinessTerms();
       const updatedKpis: KPI[] = [

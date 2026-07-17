@@ -185,6 +185,10 @@ export default function SettingsPage() {
 
       // Restore fallbacks if hidden
       localStorage.removeItem("twiniq_clear_fallback");
+      localStorage.removeItem("twiniq_is_clean_slate");
+      localStorage.removeItem("twiniq_mock_customers");
+      localStorage.removeItem("twiniq_mock_employees");
+      localStorage.removeItem("twiniq_mock_inventory");
 
       const activeTemplate = localStorage.getItem("twiniq_business_template") || "saas";
       const { customers, inventory, finance, employees } = getMockData(activeTemplate);
@@ -269,6 +273,7 @@ export default function SettingsPage() {
 
       // Suppress mock data loading locally
       localStorage.setItem("twiniq_clear_fallback", "true");
+      localStorage.setItem("twiniq_is_clean_slate", "true");
       localStorage.setItem("twiniq_mock_invoices", "[]");
       localStorage.setItem("twiniq_mock_payouts", "[]");
       localStorage.setItem("twiniq_mock_sales", "[]");
