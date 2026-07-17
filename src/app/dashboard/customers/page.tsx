@@ -72,6 +72,7 @@ export default function CustomersPage() {
   const [chatMessages, setChatMessages] = useState<{ sender: "cs" | "client"; text: string }[]>([]);
   const [chatting, setChatting] = useState(false);
   const [chatComplete, setChatComplete] = useState(false);
+  const [outreachInput, setOutreachInput] = useState("");
 
   useEffect(() => {
     async function loadData() {
@@ -373,45 +374,72 @@ export default function CustomersPage() {
     window.open(waUrl, "_blank");
   };
 
-  // Trigger Simulated WhatsApp Success Outreach
-  const handleTriggerOutreach = (cust: Customer) => {
+  // Trigger Gemini-powered CS Outreach Chat
+  const handleTriggerOutreach = async (cust: Customer) => {
     setIsOutreachChatOpen(true);
     setChatComplete(false);
     setChatting(true);
+    setOutreachInput("");
     setChatMessages([
       { sender: "cs", text: `Establishing secure connection with ${cust.name} operations dashboard...` }
     ]);
 
-    // Simulated conversation delays
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, {
-        sender: "cs",
-        text: `Hi ${cust.name} Billing & Operations team! We noticed some integration latencies and inactive logins on your TwinIQ configurations. Is everything running smoothly?`
-      }]);
-    }, 1500);
-
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, {
-        sender: "client",
-        text: `Hi TwinIQ Support! Thanks for reaching out. We actually had a configuration issue on our middleware that blocked data sync. We are working to resolve it today.`
-      }]);
-    }, 3500);
-
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, {
-        sender: "cs",
-        text: `Got it! I've pre-configured your cloud sync to dynamically scale and bypass your middleware blocks. You should see active data flowing now.`
-      }]);
-    }, 5500);
-
-    setTimeout(() => {
-      setChatMessages(prev => [...prev, {
-        sender: "client",
-        text: `Amazing, the connection is instantly stable now! We really appreciate the proactive outreach. We will continue our subscription.`
-      }]);
+    try {
+      const res = await fetch("/api/outreach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerName: cust.name, messages: [] })
+      });
+      const data = await res.json();
+      if (data.reply) {
+        setChatMessages(prev => [...prev, { sender: "client", text: data.reply }]);
+      } else {
+        setChatMessages(prev => [...prev, { sender: "client", text: "Hi, we have been having configuration latencies. Can you help us?" }]);
+      }
+    } catch (err) {
+      console.error("Outreach start failed:", err);
+      setChatMessages(prev => [...prev, { sender: "client", text: "Connection failed. Please configure GEMINI_API_KEY." }]);
+    } finally {
       setChatting(false);
-      setChatComplete(true);
-    }, 7500);
+    }
+  };
+
+  const handleSendOutreachMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!outreachInput.trim() || chatting || !selectedCust) return;
+
+    const userMsg = outreachInput.trim();
+    setOutreachInput("");
+    const updatedMessages = [...chatMessages, { sender: "cs" as const, text: userMsg }];
+    setChatMessages(updatedMessages);
+    setChatting(true);
+
+    try {
+      const res = await fetch("/api/outreach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerName: selectedCust.name, messages: updatedMessages })
+      });
+      const data = await res.json();
+      if (data.reply) {
+        const clientReply = data.reply;
+        setChatMessages(prev => [...prev, { sender: "client", text: clientReply }]);
+        
+        const lowerReply = clientReply.toLowerCase();
+        if (
+          lowerReply.includes("solved") || 
+          lowerReply.includes("thank you") || 
+          lowerReply.includes("continue") || 
+          lowerReply.includes("retained")
+        ) {
+          setChatComplete(true);
+        }
+      }
+    } catch (err) {
+      console.error("Outreach message send failed:", err);
+    } finally {
+      setChatting(false);
+    }
   };
 
   const handleCompleteOutreach = async () => {
@@ -1076,23 +1104,37 @@ export default function CustomersPage() {
             </div>
 
             {/* Footer */}
-            <div className="p-4 bg-slate-900/60 border-t border-white/5 flex flex-col gap-2">
+            <div className="p-4 bg-slate-900 border-t border-white/5 flex flex-col gap-2">
               {chatComplete ? (
-                <div className="space-y-2">
+                <div className="space-y-2 animate-scaleUp">
                   <div className="text-[10px] text-emerald-400 font-bold text-center flex items-center justify-center gap-1">
-                    <CheckCircle size={12} /> Outreach Dialog Completed Successfully!
+                    <CheckCircle size={12} /> Client Retained Successfully!
                   </div>
                   <Button 
-                    className="w-full justify-center bg-emerald-600 hover:bg-emerald-500 text-white font-bold"
+                    className="w-full justify-center bg-emerald-600 hover:bg-emerald-500 text-white font-bold cursor-pointer"
                     onClick={handleCompleteOutreach}
                   >
                     Commit Retain Actions
                   </Button>
                 </div>
               ) : (
-                <p className="text-[10px] text-slate-500 text-center italic">
-                  Simulating proactive telemetry solution dialogue...
-                </p>
+                <form onSubmit={handleSendOutreachMessage} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={outreachInput}
+                    disabled={chatting}
+                    onChange={(e) => setOutreachInput(e.target.value)}
+                    placeholder="Type support response or solution..."
+                    className="flex-1 bg-slate-950 border border-white/10 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                  />
+                  <Button 
+                    type="submit"
+                    disabled={chatting || !outreachInput.trim()}
+                    className="text-xs px-4 py-2 cursor-pointer font-bold"
+                  >
+                    Send
+                  </Button>
+                </form>
               )}
             </div>
           </div>
