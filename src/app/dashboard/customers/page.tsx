@@ -191,6 +191,9 @@ export default function CustomersPage() {
     };
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("twiniq_clear_fallback");
+      }
       if (db) {
         await setDoc(doc(db, "customers", generatedId), newCustomer);
       }

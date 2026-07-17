@@ -105,6 +105,9 @@ export default function EmployeesPage() {
     };
 
     try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("twiniq_clear_fallback");
+      }
       if (db) {
         await setDoc(doc(db, "employees", generatedId), newEmployee);
       }
