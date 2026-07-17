@@ -133,6 +133,9 @@ export default function CustomersPage() {
             });
             setCustomers(data);
             setSelectedCust(data[0]);
+            if (typeof window !== "undefined") {
+              localStorage.setItem("twiniq_mock_customers", JSON.stringify(data));
+            }
             setLoading(false);
             return;
           }
@@ -140,14 +143,24 @@ export default function CustomersPage() {
       } catch (err) {
         console.error("Firestore fetch error, using local fallback:", err);
       }
-      if (typeof window !== "undefined" && localStorage.getItem("twiniq_clear_fallback") === "true") {
-        setCustomers([]);
-        setSelectedCust(null);
-      } else {
-        const activeTemplate = typeof window !== "undefined" ? localStorage.getItem("twiniq_business_template") || "saas" : "saas";
-        const { customers: mockCustomers } = getMockData(activeTemplate);
-        setCustomers(mockCustomers);
-        setSelectedCust(mockCustomers[0] || null);
+      if (typeof window !== "undefined") {
+        const cachedCust = localStorage.getItem("twiniq_mock_customers");
+        if (cachedCust) {
+          const list = JSON.parse(cachedCust) as Customer[];
+          setCustomers(list);
+          setSelectedCust(list[0] || null);
+        } else {
+          const isCleared = localStorage.getItem("twiniq_clear_fallback") === "true";
+          if (isCleared) {
+            setCustomers([]);
+            setSelectedCust(null);
+          } else {
+            const activeTemplate = localStorage.getItem("twiniq_business_template") || "saas";
+            const { customers: mockCustomers } = getMockData(activeTemplate);
+            setCustomers(mockCustomers);
+            setSelectedCust(mockCustomers[0] || null);
+          }
+        }
       }
       setLoading(false);
     }
@@ -197,7 +210,11 @@ export default function CustomersPage() {
       if (db) {
         await setDoc(doc(db, "customers", generatedId), newCustomer);
       }
-      setCustomers(prev => [newCustomer, ...prev]);
+      const updatedList = [newCustomer, ...customers];
+      setCustomers(updatedList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_customers", JSON.stringify(updatedList));
+      }
       setSelectedCust(newCustomer);
       setNewCustName("");
       setNewCustEmail("");
@@ -232,7 +249,11 @@ export default function CustomersPage() {
       if (db) {
         await setDoc(doc(db, "customers", selectedCust.id), updatedCustomer);
       }
-      setCustomers(prev => prev.map(cust => cust.id === selectedCust.id ? updatedCustomer : cust));
+      const updatedList = customers.map(cust => cust.id === selectedCust.id ? updatedCustomer : cust);
+      setCustomers(updatedList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_customers", JSON.stringify(updatedList));
+      }
       setSelectedCust(updatedCustomer);
       setIsEditing(false);
     } catch (err) {
@@ -252,7 +273,11 @@ export default function CustomersPage() {
       if (db) {
         await deleteDoc(doc(db, "customers", selectedCust.id));
       }
-      setCustomers(prev => prev.filter(cust => cust.id !== selectedCust.id));
+      const updatedList = customers.filter(cust => cust.id !== selectedCust.id);
+      setCustomers(updatedList);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("twiniq_mock_customers", JSON.stringify(updatedList));
+      }
       setSelectedCust(null);
       setIsEditing(false);
     } catch (err) {

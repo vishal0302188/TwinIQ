@@ -272,6 +272,9 @@ export default function SettingsPage() {
       localStorage.setItem("twiniq_mock_invoices", "[]");
       localStorage.setItem("twiniq_mock_payouts", "[]");
       localStorage.setItem("twiniq_mock_sales", "[]");
+      localStorage.setItem("twiniq_mock_customers", "[]");
+      localStorage.setItem("twiniq_mock_employees", "[]");
+      localStorage.setItem("twiniq_mock_inventory", "[]");
       localStorage.removeItem("twiniq_invoices_cleared");
       localStorage.removeItem("twiniq_bills_cleared");
       localStorage.removeItem("twiniq_sales_cleared");
