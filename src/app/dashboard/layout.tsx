@@ -6,13 +6,15 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Network, PlayCircle, MessageSquare, Users, Database,
   DollarSign, Activity, FileText, Settings, Sparkles, Menu, Bell, Search,
-  Power, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, X, TrendingUp
+  Power, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, X, TrendingUp,
+  User as UserIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { initialEvents, BusinessEvent } from "@/lib/mockData";
 import { getBusinessTerms } from "@/lib/utils";
 import { auth } from "@/lib/firebase";
-import { signOut, onAuthStateChanged, User } from "firebase/auth";
+import { signOut, onAuthStateChanged } from "firebase/auth";
+import type { User } from "firebase/auth";
 
 const searchItems = [
   // Navigation
@@ -62,6 +64,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   
   // Firebase Auth states
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState("Vishal Surishetty");
+  const [userRole, setUserRole] = useState("Twin Operator");
+
+  // Load custom name and role from cache on path change or login
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const cachedName = localStorage.getItem("twiniq_user_name");
+      if (cachedName) {
+        setUserName(cachedName);
+      } else {
+        const activeEmail = currentUser?.email || localStorage.getItem("twiniq_user_session") || "operator@twiniq.ai";
+        const usernamePrefix = activeEmail.split("@")[0];
+        setUserName(usernamePrefix.charAt(0).toUpperCase() + usernamePrefix.slice(1));
+      }
+
+      const cachedRole = localStorage.getItem("twiniq_user_role");
+      if (cachedRole) {
+        setUserRole(cachedRole);
+      } else {
+        setUserRole(currentUser ? "Twin Operator" : "Apex Founder");
+      }
+    }
+  }, [currentUser, pathname]);
 
   useEffect(() => {
     setAlerts(initialEvents);
@@ -153,11 +178,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: "Sales Log", path: "/dashboard/sales", icon: TrendingUp },
     { name: sidebarTerms.staffLbl, path: "/dashboard/employees", icon: Activity },
     { name: "Reports", path: "/dashboard/reports", icon: FileText },
+    { name: "User Profile", path: "/dashboard/profile", icon: UserIcon },
     { name: "Settings", path: "/dashboard/settings", icon: Settings },
   ];
 
   // Helper values for dynamic user display
-  const userDisplayName = currentUser?.displayName || currentUser?.email?.split("@")[0] || "John Doe";
+  const userDisplayName = userName;
   const userInitials = userDisplayName.substring(0, 2).toUpperCase();
 
   return (
@@ -239,7 +265,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="text-left animate-fadeIn">
                   <div className="text-xs font-bold text-white truncate max-w-[120px]">{userDisplayName}</div>
                   <div className="text-[10px] text-slate-500 truncate max-w-[120px]">
-                    {currentUser ? "Twin Operator" : "Apex Founder"}
+                    {userRole}
                   </div>
                 </div>
               )}
